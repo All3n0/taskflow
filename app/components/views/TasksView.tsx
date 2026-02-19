@@ -1,7 +1,9 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { Task, Status } from '../../types/task';
-import { TaskCard } from '../../components/tasks/TaskCard';
-import { CheckCircle2 } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { Task } from '../../types/task';
+import { TaskCard } from '../tasks/TaskCard';
+import { TaskDetailPopup } from '../tasks/TaskDetailPopup';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -11,77 +13,76 @@ interface TasksViewProps {
   onEditTask: (task: Task) => void;
 }
 
-const statusOrder: Status[] = ['in-progress', 'todo', 'backlog', 'done'];
-
 export function TasksView({ tasks, searchQuery, onUpdateTask, onDeleteTask, onEditTask }: TasksViewProps) {
-  const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
+  const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
+
+  const filtered = tasks.filter(t =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const groupedTasks = statusOrder.reduce((acc, status) => {
-    acc[status] = filteredTasks.filter((task) => task.status === status);
-    return acc;
-  }, {} as Record<Status, Task[]>);
-
-  const statusLabels: Record<Status, string> = {
-    backlog: 'Backlog',
-    todo: 'To Do',
-    'in-progress': 'In Progress',
-    done: 'Completed',
+  // group by status
+  const groups = {
+    'in-progress': filtered.filter(t => t.status === 'in-progress'),
+    'todo':        filtered.filter(t => t.status === 'todo'),
+    'backlog':     filtered.filter(t => t.status === 'backlog'),
+    'done':        filtered.filter(t => t.status === 'done'),
   };
 
-  if (filteredTasks.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
-        <CheckCircle2 className="w-16 h-16 mb-4 opacity-30" />
-        <p className="text-lg font-medium">No tasks found</p>
-        <p className="text-sm mt-1">
-          {searchQuery ? 'Try a different search term' : 'Create your first task to get started'}
-        </p>
-      </div>
-    );
-  }
+  const groupLabels: Record<string, string> = {
+    'in-progress': 'In Progress',
+    'todo':        'To Do',
+    'backlog':     'Backlog',
+    'done':        'Done',
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="p-8 space-y-8"
-    >
-      {statusOrder.map((status) => {
-        const statusTasks = groupedTasks[status];
-        if (statusTasks.length === 0) return null;
-
-        return (
-          <motion.section
-            key={status}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold">{statusLabels[status]}</h2>
-              <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-secondary">
-                {statusTasks.length}
-              </span>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <AnimatePresence mode="popLayout">
-                {statusTasks.map((task) => (
+    <>
+      <div className="space-y-6">
+        {Object.entries(groups).map(([status, groupTasks]) => {
+          if (groupTasks.length === 0) return null;
+          return (
+            <div key={status}>
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                  {groupLabels[status]}
+                </h2>
+                <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full font-semibold">
+                  {groupTasks.length}
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {groupTasks.map(task => (
                   <TaskCard
                     key={task.id}
                     task={task}
                     onUpdate={onUpdateTask}
                     onDelete={onDeleteTask}
-                    onEdit={onEditTask}
+                    onEdit={openDetail}
                   />
                 ))}
-              </AnimatePresence>
+              </div>
             </div>
-          </motion.section>
-        );
-      })}
-    </motion.div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="text-sm">No tasks found</p>
+          </div>
+        )}
+      </div>
+
+      <TaskDetailPopup
+        task={detailTask}
+        open={detailOpen}
+        onClose={closeDetail}
+        onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
+        onEdit={(task) => { closeDetail(); onEditTask(task); }}
+      />
+    </>
   );
 }

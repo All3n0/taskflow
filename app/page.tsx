@@ -15,12 +15,12 @@ import { useTaskStore } from './components/hooks/useTaskStore';
 import { Task, Status } from './types/task';
 
 const viewTitles: Record<string, { title: string; subtitle?: string }> = {
-  dashboard: { title: 'Dashboard', subtitle: 'Your productivity at a glance' },
-  tasks: { title: 'All Tasks', subtitle: 'View and manage all your tasks' },
-  board: { title: 'Project Board', subtitle: 'Kanban-style task management' },
-  calendar: { title: 'Calendar', subtitle: 'Tasks by due date' },
+  dashboard:     { title: 'Dashboard',     subtitle: 'Your productivity at a glance' },
+  tasks:         { title: 'All Tasks',     subtitle: 'View and manage all your tasks' },
+  board:         { title: 'Project Board', subtitle: 'Kanban-style task management' },
+  calendar:      { title: 'Calendar',      subtitle: 'Tasks by due date' },
   notifications: { title: 'Notifications', subtitle: 'Manage alerts and reminders' },
-  settings: { title: 'Settings', subtitle: 'Customize your workspace' },
+  settings:      { title: 'Settings',      subtitle: 'Customize your workspace' },
 };
 
 export default function Home() {
@@ -29,12 +29,12 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<Status>('todo');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Using the task store
   const { tasks, addTask, updateTask, deleteTask, isLoaded } = useTaskStore();
 
   const urgentTasks = useMemo(
-    () => tasks.filter((t) => t.priority === 'urgent' || t.priority === 'high').length,
+    () => tasks.filter(t => t.priority === 'urgent' || t.priority === 'high').length,
     [tasks]
   );
 
@@ -55,8 +55,21 @@ export default function Home() {
     setIsDialogOpen(true);
   };
 
-  const handleSaveTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    addTask({ ...taskData, status: taskData.status || defaultStatus });
+  const handleSaveTask = (taskData: Partial<Task>) => {
+    addTask({
+      title: taskData.title || '',
+      description: taskData.description,
+      status: taskData.status || defaultStatus,
+      priority: taskData.priority || 'medium',
+      dueDate: taskData.dueDate,
+      tags: taskData.tags || [],
+      timeTracking: taskData.timeTracking,
+    });
+  };
+
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+    setIsMobileMenuOpen(false); // close mobile menu on nav
   };
 
   const handleClearAllTasks = () => {
@@ -76,13 +89,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Sidebar — handles its own mobile/desktop visibility internally */}
       <Sidebar
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
         notificationCount={urgentTasks}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onMobileMenuClose={() => setIsMobileMenuOpen(false)}
       />
 
-      <main className="ml-64 min-h-screen">
+      {/*
+        KEY FIX:
+        - Mobile (default): no left margin, full width
+        - Desktop (lg+): push right by sidebar width
+      */}
+      <div className="lg:ml-64 min-h-screen flex flex-col">
         {activeView !== 'notifications' && activeView !== 'settings' && (
           <Header
             title={viewInfo.title}
@@ -90,21 +111,21 @@ export default function Home() {
             onAddTask={handleAddTask}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            onMenuClick={() => setIsMobileMenuOpen(true)}
           />
         )}
 
-        <div className="p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             {activeView === 'dashboard' && (
               <DashboardView
                 key="dashboard"
                 tasks={tasks}
+                onEditTask={handleEditTask}
                 onUpdateTask={updateTask}
                 onDeleteTask={deleteTask}
-                onEditTask={handleEditTask}
               />
             )}
-            
             {activeView === 'tasks' && (
               <TasksView
                 key="tasks"
@@ -115,7 +136,6 @@ export default function Home() {
                 onEditTask={handleEditTask}
               />
             )}
-            
             {activeView === 'board' && (
               <BoardView
                 key="board"
@@ -126,7 +146,6 @@ export default function Home() {
                 onAddTask={handleAddTaskWithStatus}
               />
             )}
-            
             {activeView === 'calendar' && (
               <CalendarView
                 key="calendar"
@@ -134,11 +153,9 @@ export default function Home() {
                 onEditTask={handleEditTask}
               />
             )}
-            
             {activeView === 'notifications' && (
               <NotificationsView key="notifications" />
             )}
-            
             {activeView === 'settings' && (
               <SettingsView
                 key="settings"
@@ -147,8 +164,8 @@ export default function Home() {
               />
             )}
           </AnimatePresence>
-        </div>
-      </main>
+        </main>
+      </div>
 
       <TaskDialog
         open={isDialogOpen}
