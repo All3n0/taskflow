@@ -104,7 +104,7 @@ export default function Home() {
         - Desktop (lg+): push right by sidebar width
       */}
       <div className="lg:ml-64 min-h-screen flex flex-col">
-        {activeView !== 'notifications' && activeView !== 'settings' && (
+        { activeView !== 'settings' && (
           <Header
             title={viewInfo.title}
             subtitle={viewInfo.subtitle}
