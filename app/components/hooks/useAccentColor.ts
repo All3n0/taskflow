@@ -51,19 +51,19 @@ export function applyTheme(theme: 'light' | 'dark' | 'system') {
 export function useAccentColor() {
   useEffect(() => {
     // Restore accent
-    const savedHex = localStorage.getItem('kazora-accent');
-    const savedFg  = localStorage.getItem('kazora-accent-fg') || '#ffffff';
+    const savedHex = localStorage.getItem('kazistack-accent');
+    const savedFg  = localStorage.getItem('kazistack-accent-fg') || '#ffffff';
     if (savedHex) applyAccentColor(savedHex, savedFg);
 
     // Restore theme
-    const savedTheme = (localStorage.getItem('kazora-theme') || 'system') as
+    const savedTheme = (localStorage.getItem('kazistack-theme') || 'system') as
       'light' | 'dark' | 'system';
     applyTheme(savedTheme);
 
     // Keep "system" mode in sync if OS setting changes
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const onSystemChange = () => {
-      if ((localStorage.getItem('kazora-theme') || 'system') === 'system') {
+      if ((localStorage.getItem('kazistack-theme') || 'system') === 'system') {
         applyTheme('system');
       }
     };

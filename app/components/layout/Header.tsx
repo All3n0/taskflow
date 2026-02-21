@@ -8,6 +8,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../utils';
 import { Task } from '../../types/task';
+import { KazistackLogo } from '../KazistackLogo';
 
 interface HeaderProps {
   title: string;
@@ -84,7 +85,14 @@ export function Header({
         >
           <Menu className="w-5 h-5" />
         </Button>
-        <div>
+        
+        {/* Mobile logo - only visible on mobile */}
+        <div className="lg:hidden">
+          <KazistackLogo size={28} showText={false} />
+        </div>
+        
+        {/* Title section */}
+        <div className="hidden sm:block">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">{title}</h1>
           {subtitle && (
             <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">{subtitle}</p>

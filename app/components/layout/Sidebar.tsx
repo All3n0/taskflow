@@ -3,10 +3,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CheckSquare, Calendar,
-  Kanban, Bell, Settings, Zap, X,
+  Kanban, Bell, Settings, X,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { useEffect } from 'react';
+import { KazistackLogo } from '../KazistackLogo';
 
 interface SidebarProps {
   activeView: string;
@@ -42,22 +43,13 @@ export function Sidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      {/* Logo - Updated with KazistackLogo component */}
       <div
         className="px-5 py-5 flex items-center justify-between flex-shrink-0 border-b"
         style={{ borderColor: 'var(--sidebar-border)' }}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary" />
-          </div>
-          <span
-            className="text-lg font-black tracking-tight"
-            style={{ color: 'var(--sidebar-foreground)' }}
-          >
-            kazistack
-          </span>
-        </div>
+        <KazistackLogo showText={true} />
+        
         <button
           onClick={onMobileMenuClose}
           className="lg:hidden p-2 rounded-xl transition-colors"
@@ -165,12 +157,19 @@ export function Sidebar({
               <span>{item.label}</span>
               {item.badge && (
                 <span className="ml-auto px-2 py-0.5 text-[10px] font-black bg-destructive text-destructive-foreground rounded-full">
-                  {item.badge}
+                  {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
             </motion.button>
           );
         })}
+
+        {/* Version footer */}
+        <div className="px-4 pt-4 mt-2">
+          <p className="text-[8px] text-muted-foreground/50 text-center">
+            KAZISTACK v1.0
+          </p>
+        </div>
       </div>
     </div>
   );
