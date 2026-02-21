@@ -6,19 +6,23 @@ import { format } from 'date-fns';
 import {
   CheckCircle, Clock, AlertCircle, TrendingUp, Timer, Flame,
   Calendar, X, Flag, Tag, Edit, Trash2, AlertTriangle,
-  CheckCircle2, Circle, Loader, Archive,
+  CheckCircle2, Circle, Loader, Archive, Link2,
+  Copy, Share2, Bookmark, Bell, Folder, User,
+  Star, Printer, Mail, MessageCircle, MessageSquare
 } from 'lucide-react';
 import {
   Task, Priority, Status,
   secondsToTimeDisplay, getTotalLoggedTime, isOverdue,
 } from '../../types/task';
 import { cn } from '../utils';
+import { TaskDetailPopup } from './TaskDetailPopup'; // Import the enhanced version
 
 interface DashboardViewProps {
   tasks: Task[];
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onAddTask?: (task: Task) => void; // Optional for duplicate functionality
 }
 
 const priorityConfig: Record<Priority, { label: string; color: string; bg: string }> = {
@@ -35,213 +39,25 @@ const statusConfig: Record<Status, { label: string; icon: React.ElementType; col
   done:          { label: 'Done',        icon: CheckCircle2, color: 'text-green-500',        bg: 'bg-green-500/10' },
 };
 
-function TaskDetailPopup({
-  task, open, onClose, onEdit, onDelete, onComplete,
-}: {
-  task: Task | null; open: boolean; onClose: () => void;
-  onEdit: (task: Task) => void; onDelete: (id: string) => void;
-  onComplete: (id: string, done: boolean) => void;
-}) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const handleClose = () => { setConfirmDelete(false); onClose(); };
-  const handleDelete = () => {
-    if (!confirmDelete) { setConfirmDelete(true); return; }
-    onDelete(task!.id); handleClose();
-  };
-  const handleEdit = () => { onEdit(task!); handleClose(); };
-  const handleComplete = () => {
-    if (!task) return;
-    const isDone = task.status === 'done';
-    onComplete(task.id, !isDone);
-    if (!isDone) handleClose();
-  };
-
-  if (!task) return null;
-
-  const isDone     = task.status === 'done';
-  const priority   = priorityConfig[task.priority];
-  const status     = statusConfig[task.status];
-  const StatusIcon = status.icon;
-  const totalSeconds  = getTotalLoggedTime(task.timeTracking);
-  const timeDisplay   = secondsToTimeDisplay(totalSeconds);
-  const taskIsOverdue = isOverdue(task);
-
-  const getTimeInfo = () => {
-    if (!task.dueDate) return null;
-    const d = new Date(task.dueDate);
-    const isFull = d.getHours() === 23 && d.getMinutes() === 59;
-    if (isFull) return { date: format(d, 'EEE, MMM d yyyy'), time: 'Full day' };
-    const entry = task.timeTracking?.entries?.[0];
-    const endStr = entry?.endTime ? ` → ${format(new Date(entry.endTime), 'HH:mm')}` : '';
-    return { date: format(d, 'EEE, MMM d yyyy'), time: `${format(d, 'HH:mm')}${endStr}` };
-  };
-
-  const timeInfo = getTimeInfo();
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }} onClick={handleClose}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-          />
-          <motion.div key="panel" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 36 }}
-            className={cn(
-              "fixed z-50 bg-background border-t border-border shadow-2xl overflow-hidden",
-              "bottom-0 left-0 right-0 rounded-t-3xl",
-              "sm:border sm:rounded-3xl sm:bottom-auto sm:left-1/2 sm:top-1/2",
-              "sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[min(480px,calc(100vw-2rem))]",
-            )}
-          >
-            <div className="flex justify-center pt-3 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className={cn("h-1 w-full mt-2 sm:mt-0 sm:rounded-t-3xl",
-              task.priority === 'urgent' ? 'bg-destructive' :
-              task.priority === 'high'   ? 'bg-yellow-500' :
-              task.priority === 'medium' ? 'bg-primary' : 'bg-muted'
-            )} />
-
-            <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
-              <div className="flex-1 min-w-0">
-                <h2 className={cn("text-lg sm:text-xl font-black text-foreground leading-tight line-clamp-2", isDone && "line-through text-muted-foreground")}>
-                  {task.title}
-                </h2>
-                <div className={cn("inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-bold", status.color, status.bg)}>
-                  <StatusIcon className={cn("w-3 h-3", task.status === 'in-progress' && 'animate-spin')} />
-                  {status.label}
-                </div>
-              </div>
-              <button onClick={handleClose} className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="px-5 pb-3 space-y-3">
-              {task.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{task.description}</p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <div className={cn("flex items-center gap-2 px-3 py-2.5 rounded-2xl", priority.bg)}>
-                  <Flag className={cn("w-3 h-3 flex-shrink-0", priority.color)} />
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Priority</p>
-                    <p className={cn("text-xs font-bold truncate", priority.color)}>{priority.label}</p>
-                  </div>
-                </div>
-                {timeInfo ? (
-                  <div className={cn("flex items-center gap-2 px-3 py-2.5 rounded-2xl", taskIsOverdue ? "bg-destructive/10" : "bg-secondary/60")}>
-                    <Calendar className={cn("w-3 h-3 flex-shrink-0", taskIsOverdue ? "text-destructive" : "text-primary")} />
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Due</p>
-                      <p className={cn("text-[10px] font-bold truncate", taskIsOverdue ? "text-destructive" : "text-foreground")}>{timeInfo.date}</p>
-                      <p className={cn("text-[9px]", taskIsOverdue ? "text-destructive/70" : "text-muted-foreground")}>{timeInfo.time}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-secondary/40">
-                    <Calendar className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Due</p>
-                      <p className="text-[10px] text-muted-foreground">No date</p>
-                    </div>
-                  </div>
-                )}
-                {totalSeconds > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-secondary/60">
-                    <Timer className="w-3 h-3 flex-shrink-0 text-primary" />
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Logged</p>
-                      <p className="text-xs font-bold font-mono text-foreground truncate">
-                        {timeDisplay.hours > 0 ? `${timeDisplay.hours}h ` : ''}
-                        {timeDisplay.minutes > 0 ? `${timeDisplay.minutes}m ` : ''}
-                        {timeDisplay.seconds}s
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {task.timeTracking?.isRunning && (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-primary/10">
-                    <motion.div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 1.2, repeat: Infinity }} />
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Timer</p>
-                      <p className="text-xs font-bold text-primary">Running</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Tag className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                  {task.tags.map(tag => (
-                    <span key={tag} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[10px] font-semibold">{tag}</span>
-                  ))}
-                </div>
-              )}
-              <p className="text-[10px] text-muted-foreground">Created {format(new Date(task.createdAt), 'MMM d, yyyy · HH:mm')}</p>
-              {taskIsOverdue && (
-                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-destructive/10 border border-destructive/20"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
-                  <p className="text-xs font-bold text-destructive">This task is overdue</p>
-                </motion.div>
-              )}
-            </div>
-
-            <div className="h-px bg-border mx-5" />
-
-            <div className="px-5 py-4 pb-safe">
-              <AnimatePresence mode="wait">
-                {confirmDelete ? (
-                  <motion.div key="confirm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="space-y-2">
-                    <p className="text-center text-xs text-muted-foreground">This action cannot be undone</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => setConfirmDelete(false)} className="flex-1 py-3 rounded-2xl border border-border text-sm font-bold hover:bg-secondary transition-colors">Cancel</button>
-                      <button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-white text-sm font-black hover:opacity-90 transition-opacity">Yes, Delete</button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div key="actions" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="space-y-2">
-                    {/* Mark done — full width */}
-                    <button onClick={handleComplete} className={cn(
-                      "w-full flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-black transition-all",
-                      isDone
-                        ? "bg-secondary text-foreground hover:bg-secondary/80"
-                        : "bg-green-500 text-white shadow-lg shadow-green-500/20 hover:bg-green-600 hover:scale-[1.01]"
-                    )}>
-                      <CheckCircle2 className="w-4 h-4" />
-                      {isDone ? 'Mark as Incomplete' : 'Mark as Done'}
-                    </button>
-                    {/* Edit + Delete */}
-                    <div className="flex gap-2">
-                      <button onClick={handleDelete} className="flex items-center justify-center w-12 h-12 rounded-2xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-all flex-shrink-0">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={handleEdit} className="flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all">
-                        <Edit className="w-4 h-4" /> Edit Task
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }: DashboardViewProps) {
+export function DashboardView({ 
+  tasks, 
+  onEditTask, 
+  onDeleteTask, 
+  onUpdateTask,
+  onAddTask 
+}: DashboardViewProps) {
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
-  const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
+  const openDetail = (task: Task) => { 
+    setDetailTask(task); 
+    setDetailOpen(true); 
+  };
+  
+  const closeDetail = () => { 
+    setDetailOpen(false); 
+    setDetailTask(null); 
+  };
 
   const handleComplete = (id: string, done: boolean) => {
     onUpdateTask(id, {
@@ -250,18 +66,141 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
     });
   };
 
-  const totalTasks   = tasks.length;
-  const inProgress   = tasks.filter(t => t.status === 'in-progress').length;
+  // Optional handlers for enhanced popup features
+  const handleDuplicate = (task: Task) => {
+    if (!onAddTask) return;
+    
+    const duplicatedTask: Task = {
+      ...task,
+      id: crypto.randomUUID(),
+      title: `${task.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'todo' as Status,
+      completedAt: undefined,
+      timeTracking: task.timeTracking ? {
+        ...task.timeTracking,
+        entries: [],
+        totalTime: 0,
+        isRunning: false,
+        activeEntryId: undefined
+      } : undefined
+    };
+    onAddTask(duplicatedTask);
+    
+    // You could show a toast notification here
+    console.log('Task duplicated:', duplicatedTask.title);
+  };
+
+  const handleCopyLink = (task: Task) => {
+    const url = `${window.location.origin}/tasks/${task.id}`;
+    navigator.clipboard.writeText(url);
+    // You could show a toast notification here
+    console.log('Link copied to clipboard:', url);
+  };
+
+  const handleBookmark = (task: Task) => {
+    // You would need to add a bookmarked field to your Task type
+    // For now, we'll just log it
+    console.log('Bookmark task:', task.id);
+    // You could store bookmarks in localStorage or a separate state
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarkedTasks') || '[]');
+    if (!bookmarks.includes(task.id)) {
+      bookmarks.push(task.id);
+      localStorage.setItem('bookmarkedTasks', JSON.stringify(bookmarks));
+    }
+  };
+
+  const handleArchive = (task: Task) => {
+    // You would need to add an archived field to your Task type
+    // For now, we'll just update the status or move to a different list
+    onUpdateTask(task.id, { status: 'backlog' as Status });
+    console.log('Archive task:', task.id);
+  };
+
+  const handleAddReminder = (task: Task) => {
+    // This would typically open a date picker modal
+    console.log('Add reminder for task:', task.id);
+    // You could store reminders in localStorage or a separate state
+  };
+
+  const handleShare = (task: Task) => {
+    // Try to use the Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: task.title,
+        text: task.description || 'Check out this task',
+        url: `${window.location.origin}/tasks/${task.id}`,
+      }).catch(console.error);
+    } else {
+      // Fallback to copying link
+      handleCopyLink(task);
+    }
+  };
+
+  const handlePrint = (task: Task) => {
+    // Create a printable version of the task
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${task.title} - Task Details</title>
+            <style>
+              body { font-family: system-ui, sans-serif; padding: 2rem; }
+              h1 { font-size: 2rem; margin-bottom: 1rem; }
+              .metadata { display: grid; gap: 0.5rem; margin-bottom: 2rem; }
+              .label { font-weight: bold; color: #666; }
+            </style>
+          </head>
+          <body>
+            <h1>${task.title}</h1>
+            ${task.description ? `<p>${task.description}</p>` : ''}
+            <div class="metadata">
+              <div><span class="label">Status:</span> ${task.status}</div>
+              <div><span class="label">Priority:</span> ${task.priority}</div>
+              ${task.dueDate ? `<div><span class="label">Due:</span> ${format(new Date(task.dueDate), 'PPP')}</div>` : ''}
+              ${task.assignee ? `<div><span class="label">Assignee:</span> ${task.assignee}</div>` : ''}
+              ${task.project ? `<div><span class="label">Project:</span> ${task.project}</div>` : ''}
+              <div><span class="label">Created:</span> ${format(new Date(task.createdAt), 'PPP')}</div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleAssign = (task: Task) => {
+    // This would typically open a user selector modal
+    console.log('Assign task:', task.id);
+    // You could update the assignee field
+    // onUpdateTask(task.id, { assignee: 'user@example.com' });
+  };
+
+  const handleMoveToProject = (task: Task) => {
+    // This would typically open a project selector modal
+    console.log('Move task to project:', task.id);
+    // You could update the project field
+    // onUpdateTask(task.id, { project: 'new-project-id' });
+  };
+
+  const totalTasks = tasks.length;
+  const inProgress = tasks.filter(t => t.status === 'in-progress').length;
   const overdueCount = tasks.filter(t => isOverdue(t)).length;
-  const done         = tasks.filter(t => t.status === 'done').length;
+  const done = tasks.filter(t => t.status === 'done').length;
   const completionRate = totalTasks > 0 ? Math.round((done / totalTasks) * 100) : 0;
 
   const totalTrackedSeconds = tasks.reduce((acc, t) => acc + getTotalLoggedTime(t.timeTracking), 0);
   const totalTrackedDisplay = secondsToTimeDisplay(totalTrackedSeconds);
   const activeTimer = tasks.find(t => t.timeTracking?.isRunning);
 
-  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday   = new Date(); endOfToday.setHours(23, 59, 59, 999);
+  const startOfToday = new Date(); 
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(); 
+  endOfToday.setHours(23, 59, 59, 999);
+  
   const dueTodayTasks = tasks.filter(t => {
     if (!t.dueDate || t.status === 'done') return false;
     const due = new Date(t.dueDate);
@@ -269,39 +208,56 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
   });
 
   const getStreak = () => {
-    const completedDates = tasks.filter(t => t.completedAt).map(t => new Date(t.completedAt!).toDateString());
+    const completedDates = tasks
+      .filter(t => t.completedAt)
+      .map(t => new Date(t.completedAt!).toDateString());
     const uniqueDates = [...new Set(completedDates)].sort().reverse();
-    let streak = 0; const check = new Date();
+    let streak = 0; 
+    const check = new Date();
     for (const dateStr of uniqueDates) {
-      if (new Date(dateStr).toDateString() === check.toDateString()) { streak++; check.setDate(check.getDate() - 1); }
-      else break;
+      if (new Date(dateStr).toDateString() === check.toDateString()) { 
+        streak++; 
+        check.setDate(check.getDate() - 1); 
+      } else break;
     }
     return streak;
   };
 
   const stats = [
-    { label: 'Total Tasks', value: totalTasks,           icon: CheckCircle, color: 'text-primary' },
-    { label: 'In Progress', value: inProgress,           icon: Clock,       color: 'text-yellow-500' },
-    { label: 'Overdue',     value: overdueCount,         icon: AlertCircle, color: 'text-destructive' },
-    { label: 'Completion',  value: `${completionRate}%`, icon: TrendingUp,  color: 'text-green-500' },
+    { label: 'Total Tasks', value: totalTasks, icon: CheckCircle, color: 'text-primary' },
+    { label: 'In Progress', value: inProgress, icon: Clock, color: 'text-yellow-500' },
+    { label: 'Overdue', value: overdueCount, icon: AlertCircle, color: 'text-destructive' },
+    { label: 'Completion', value: `${completionRate}%`, icon: TrendingUp, color: 'text-green-500' },
   ];
 
   const recentActivity = [...tasks]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 4).map(task => {
+    .slice(0, 4)
+    .map(task => {
       const diffMs = Date.now() - new Date(task.updatedAt).getTime();
       const diffHours = Math.floor(diffMs / 3_600_000);
-      const diffDays  = Math.floor(diffHours / 24);
+      const diffDays = Math.floor(diffHours / 24);
       const timeAgo = diffDays > 0 ? `${diffDays}d ago` : diffHours > 0 ? `${diffHours}h ago` : 'Just now';
-      const statusText: Record<string, string> = { done: 'completed', 'in-progress': 'started', todo: 'added to To Do', backlog: 'moved to Backlog' };
-      return { task, text: `"${task.title}" ${statusText[task.status] ?? 'updated'}`, time: timeAgo };
+      const statusText: Record<string, string> = { 
+        done: 'completed', 
+        'in-progress': 'started', 
+        todo: 'added to To Do', 
+        backlog: 'moved to Backlog' 
+      };
+      return { 
+        task, 
+        text: `"${task.title}" ${statusText[task.status] ?? 'updated'}`, 
+        time: timeAgo 
+      };
     });
 
   return (
     <>
       <div className="space-y-4 sm:space-y-6 lg:space-y-8">
         {activeTimer && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }}
             onClick={() => openDetail(activeTimer)}
             className="glass border border-primary/30 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors gap-3"
           >
@@ -319,7 +275,11 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {stats.map((stat, index) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
+            <motion.div 
+              key={stat.label} 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: index * 0.08 }}
               className="glass p-4 sm:p-5 lg:p-6 rounded-2xl"
             >
               <div className="flex items-start justify-between gap-2">
@@ -334,25 +294,37 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass p-4 sm:p-6 rounded-2xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.3 }} 
+            className="glass p-4 sm:p-6 rounded-2xl"
+          >
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
               <h2 className="text-base sm:text-lg font-semibold">Due Today</h2>
-              <span className="ml-auto text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex-shrink-0">{dueTodayTasks.length} tasks</span>
+              <span className="ml-auto text-[10px] sm:text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex-shrink-0">
+                {dueTodayTasks.length} tasks
+              </span>
             </div>
             {dueTodayTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4 sm:py-6">Nothing due today 🎉</p>
             ) : (
               <div className="space-y-1">
                 {dueTodayTasks.map(task => (
-                  <motion.div key={task.id} whileHover={{ x: 2 }} whileTap={{ scale: 0.99 }}
+                  <motion.div 
+                    key={task.id} 
+                    whileHover={{ x: 2 }} 
+                    whileTap={{ scale: 0.99 }}
                     onClick={() => openDetail(task)}
                     className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0 cursor-pointer group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={cn("w-2 h-2 rounded-full flex-shrink-0", {
-                        'bg-destructive': task.priority === 'urgent', 'bg-yellow-500': task.priority === 'high',
-                        'bg-primary': task.priority === 'medium', 'bg-muted-foreground': task.priority === 'low',
+                        'bg-destructive': task.priority === 'urgent', 
+                        'bg-yellow-500': task.priority === 'high',
+                        'bg-primary': task.priority === 'medium', 
+                        'bg-muted-foreground': task.priority === 'low',
                       })} />
                       <p className="text-xs sm:text-sm truncate group-hover:text-primary transition-colors">{task.title}</p>
                     </div>
@@ -365,14 +337,22 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
             )}
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass p-4 sm:p-6 rounded-2xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.4 }} 
+            className="glass p-4 sm:p-6 rounded-2xl"
+          >
             <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h2>
             {recentActivity.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4 sm:py-6">No activity yet</p>
             ) : (
               <div className="space-y-1">
                 {recentActivity.map((activity, index) => (
-                  <motion.div key={index} whileHover={{ x: 2 }} whileTap={{ scale: 0.99 }}
+                  <motion.div 
+                    key={index} 
+                    whileHover={{ x: 2 }} 
+                    whileTap={{ scale: 0.99 }}
                     onClick={() => openDetail(activity.task)}
                     className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0 cursor-pointer group gap-3"
                   >
@@ -385,13 +365,23 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
           </motion.div>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="glass p-4 sm:p-6 rounded-2xl">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.5 }} 
+          className="glass p-4 sm:p-6 rounded-2xl"
+        >
           <h2 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">Productivity Overview</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="space-y-2">
               <p className="text-xs sm:text-sm text-muted-foreground">Completion Rate</p>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary rounded-full" initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} transition={{ duration: 0.8, ease: 'easeOut' }} />
+                <motion.div 
+                  className="h-full bg-primary rounded-full" 
+                  initial={{ width: 0 }} 
+                  animate={{ width: `${completionRate}%` }} 
+                  transition={{ duration: 0.8, ease: 'easeOut' }} 
+                />
               </div>
               <p className="text-xs text-muted-foreground">{done} of {totalTasks} tasks done</p>
             </div>
@@ -417,14 +407,38 @@ export function DashboardView({ tasks, onEditTask, onDeleteTask, onUpdateTask }:
         </motion.div>
       </div>
 
-      <TaskDetailPopup
-        task={detailTask}
-        open={detailOpen}
-        onClose={closeDetail}
-        onEdit={onEditTask}
-        onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
-        onComplete={handleComplete}
-      />
+      {/* Enhanced Task Detail Popup with all features */}
+     <TaskDetailPopup
+  task={detailTask}
+  open={detailOpen}
+  onClose={closeDetail}
+  onComplete={(id, done) => {
+    onUpdateTask(id, {
+      status: done ? 'done' : 'todo',
+      completedAt: done ? new Date().toISOString() : undefined,
+    });
+    closeDetail();
+  }}
+  onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
+  onEdit={(task) => { closeDetail(); onEditTask(task); }}
+  onDuplicate={(task) => {
+    const duplicate = {
+      ...task,
+      id: crypto.randomUUID(),
+      title: `${task.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'todo' as const,
+      completedAt: undefined,
+      timeTracking: task.timeTracking
+        ? { ...task.timeTracking, entries: [], totalTime: 0, isRunning: false, activeEntryId: undefined }
+        : undefined,
+    };
+    // Add it via store directly — need to expose addTask or use updateTask workaround
+    onEditTask(duplicate); // opens it in the dialog so user can save it
+    closeDetail();
+  }}
+/>
     </>
   );
 }

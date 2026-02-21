@@ -14,6 +14,7 @@ import { NotificationsView } from './components/views/NotificationsView';
 import { SettingsView } from './components/views/SettingsView';
 import { useTaskStore } from './components/hooks/useTaskStore';
 import { useTaskReminders } from './components/hooks/useTaskReminders';
+import { useAccentColor } from './components/hooks/useAccentColor'; // ← ADD THIS IMPORT
 import { Task, Status } from './types/task';
 
 const viewTitles: Record<string, { title: string; subtitle?: string }> = {
@@ -34,6 +35,10 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { tasks, addTask, updateTask, deleteTask, isLoaded } = useTaskStore();
+
+  // ✅ ADD THIS — restores saved accent color + theme on every page load
+  // This is what makes the color persist when you refresh or open a new tab
+  useAccentColor();
 
   // 🔔 Auto-fires reminders when task due times are reached
   useTaskReminders(tasks);
@@ -73,12 +78,12 @@ export default function Home() {
 
   const handleSaveTask = (taskData: Partial<Task>) => {
     addTask({
-      title: taskData.title || '',
-      description: taskData.description,
-      status: taskData.status || defaultStatus,
-      priority: taskData.priority || 'medium',
-      dueDate: taskData.dueDate,
-      tags: taskData.tags || [],
+      title:        taskData.title || '',
+      description:  taskData.description,
+      status:       taskData.status || defaultStatus,
+      priority:     taskData.priority || 'medium',
+      dueDate:      taskData.dueDate,
+      tags:         taskData.tags || [],
       timeTracking: taskData.timeTracking,
     });
   };
@@ -93,7 +98,7 @@ export default function Home() {
     window.location.reload();
   };
 
-  const viewInfo = viewTitles[activeView] || { title: 'kazora' };
+  const viewInfo = viewTitles[activeView] || { title: 'Kazora' };
 
   if (!isLoaded) {
     return (
@@ -114,6 +119,7 @@ export default function Home() {
       />
 
       <div className="lg:ml-64 min-h-screen flex flex-col">
+        {/* Header hidden on settings — settings has its own full layout */}
         {activeView !== 'settings' && (
           <Header
             title={viewInfo.title}
@@ -123,20 +129,20 @@ export default function Home() {
             onSearchChange={setSearchQuery}
             onMenuClick={() => setIsMobileMenuOpen(true)}
             tasks={tasks}
-            onViewChange={handleViewChange}          
+            onViewChange={handleViewChange}
           />
         )}
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             {activeView === 'dashboard' && (
-             <DashboardView
-    key="dashboard"
-    tasks={tasks}
-    onEditTask={handleEditTask}
-    onUpdateTask={updateTask}       // ← already there
-    onDeleteTask={deleteTask}
-  />
+              <DashboardView
+                key="dashboard"
+                tasks={tasks}
+                onEditTask={handleEditTask}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+              />
             )}
             {activeView === 'tasks' && (
               <TasksView
@@ -160,12 +166,12 @@ export default function Home() {
             )}
             {activeView === 'calendar' && (
               <CalendarView
-    key="calendar"
-    tasks={tasks}
-    onEditTask={handleEditTask}
-    onUpdateTask={updateTask}       // ← add this
-    onDeleteTask={deleteTask}       // ← add this
-  />
+                key="calendar"
+                tasks={tasks}
+                onEditTask={handleEditTask}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+              />
             )}
             {activeView === 'notifications' && (
               <NotificationsView key="notifications" />

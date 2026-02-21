@@ -67,14 +67,14 @@
       
 //       syncWithGuestData: async () => {
 //         // When user logs in, sync local tasks to backend
-//         const localTasks = JSON.parse(localStorage.getItem('kazora-tasks') || '[]');
+//         const localTasks = JSON.parse(localStorage.getItem('kazistack-tasks') || '[]');
 //         const { user, token } = get();
         
 //         if (user && token && localTasks.length > 0) {
 //           try {
 //             // Upload local tasks to backend
 //             // We'll implement this in task-sync.ts
-//             localStorage.removeItem('kazora-tasks');
+//             localStorage.removeItem('kazistack-tasks');
 //           } catch (error) {
 //             console.error('Failed to sync guest data:', error);
 //           }
@@ -82,7 +82,7 @@
 //       },
 //     }),
 //     {
-//       name: 'kazora-auth',
+//       name: 'kazistack-auth',
 //     }
 //   )
 // );

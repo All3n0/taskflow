@@ -17,6 +17,7 @@ interface DashboardViewProps {
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onEditTask: (task: Task) => void;
+  onAddTask?: (task: Task) => void; // Optional for duplicate functionality
 }
 
 const container = {
@@ -63,13 +64,135 @@ function categorizeTasks(tasks: Task[]) {
   return { today: sort(today), tomorrow: sort(tomorrow), week: sort(week), other: sort(other) };
 }
 
-export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask }: DashboardViewProps) {
+export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAddTask }: DashboardViewProps) {
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('today');
 
   const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
   const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
+
+  // Optional handlers for enhanced popup features
+  const handleDuplicate = (task: Task) => {
+    if (!onAddTask) return;
+    
+    const duplicatedTask: Task = {
+      ...task,
+      id: crypto.randomUUID(),
+      title: `${task.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'todo',
+      completedAt: undefined,
+      timeTracking: task.timeTracking ? {
+        ...task.timeTracking,
+        entries: [],
+        totalTime: 0,
+        isRunning: false,
+        activeEntryId: undefined
+      } : undefined
+    };
+    onAddTask(duplicatedTask);
+  };
+
+  const handleCopyLink = (task: Task) => {
+    const url = `${window.location.origin}/tasks/${task.id}`;
+    navigator.clipboard.writeText(url);
+    // You could show a toast notification here
+  };
+
+  const handleBookmark = (task: Task) => {
+    // Store bookmarks in localStorage
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarkedTasks') || '[]');
+    if (!bookmarks.includes(task.id)) {
+      bookmarks.push(task.id);
+      localStorage.setItem('bookmarkedTasks', JSON.stringify(bookmarks));
+    }
+  };
+
+  const handleArchive = (task: Task) => {
+    // Archive by moving to backlog
+    onUpdateTask(task.id, { status: 'backlog' });
+  };
+
+  const handleAddReminder = (task: Task) => {
+    // This would typically open a date picker modal
+    console.log('Add reminder for task:', task.id);
+  };
+
+  const handleShare = (task: Task) => {
+    // Try to use the Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: task.title,
+        text: task.description || 'Check out this task',
+        url: `${window.location.origin}/tasks/${task.id}`,
+      }).catch(console.error);
+    } else {
+      // Fallback to copying link
+      handleCopyLink(task);
+    }
+  };
+
+  const handlePrint = (task: Task) => {
+    // Create a printable version of the task
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${task.title} - Task Details</title>
+            <style>
+              body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; }
+              h1 { font-size: 2rem; margin-bottom: 1rem; color: #1a1a1a; }
+              .metadata { display: grid; gap: 1rem; margin: 2rem 0; background: #f5f5f5; padding: 1.5rem; border-radius: 0.5rem; }
+              .row { display: flex; }
+              .label { font-weight: 600; color: #666; width: 120px; }
+              .value { color: #1a1a1a; }
+              .description { background: #fafafa; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #007bff; }
+              @media (prefers-color-scheme: dark) {
+                body { background: #1a1a1a; color: #e5e5e5; }
+                h1 { color: #e5e5e5; }
+                .metadata { background: #2a2a2a; }
+                .label { color: #999; }
+                .value { color: #e5e5e5; }
+                .description { background: #2a2a2a; border-left-color: #4d9fff; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${task.title}</h1>
+            ${task.description ? `<div class="description"><p>${task.description}</p></div>` : ''}
+            <div class="metadata">
+              <div class="row"><span class="label">Status:</span><span class="value">${task.status}</span></div>
+              <div class="row"><span class="label">Priority:</span><span class="value">${task.priority}</span></div>
+              ${task.dueDate ? `<div class="row"><span class="label">Due:</span><span class="value">${format(new Date(task.dueDate), 'PPP')}</span></div>` : ''}
+              ${task.startDate ? `<div class="row"><span class="label">Start:</span><span class="value">${format(new Date(task.startDate), 'PPP')}</span></div>` : ''}
+              ${task.assignee ? `<div class="row"><span class="label">Assignee:</span><span class="value">${task.assignee}</span></div>` : ''}
+              ${task.project ? `<div class="row"><span class="label">Project:</span><span class="value">${task.project}</span></div>` : ''}
+              ${task.tags && task.tags.length > 0 ? `<div class="row"><span class="label">Tags:</span><span class="value">${task.tags.join(', ')}</span></div>` : ''}
+              <div class="row"><span class="label">Created:</span><span class="value">${format(new Date(task.createdAt), 'PPP')}</span></div>
+              ${task.completedAt ? `<div class="row"><span class="label">Completed:</span><span class="value">${format(new Date(task.completedAt), 'PPP')}</span></div>` : ''}
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleAssign = (task: Task) => {
+    // This would typically open a user selector modal
+    console.log('Assign task:', task.id);
+    // For demo, we'll just log it
+  };
+
+  const handleMoveToProject = (task: Task) => {
+    // This would typically open a project selector modal
+    console.log('Move task to project:', task.id);
+    // For demo, we'll just log it
+  };
 
   const completedCount  = tasks.filter(t => t.status === 'done').length;
   const inProgressCount = tasks.filter(t => t.status === 'in-progress').length;
@@ -243,20 +366,38 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask }:
         </motion.div>
       </motion.div>
 
-      <TaskDetailPopup
-        task={detailTask}
-        open={detailOpen}
-        onClose={closeDetail}
-        onComplete={(id, done) => {
-          onUpdateTask(id, {
-            status: done ? 'done' : 'todo',
-            completedAt: done ? new Date().toISOString() : undefined,
-          });
-          closeDetail();
-        }}
-        onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
-        onEdit={(task) => { closeDetail(); onEditTask(task); }}
-      />
+      {/* Enhanced Task Detail Popup with all features */}
+    <TaskDetailPopup
+  task={detailTask}
+  open={detailOpen}
+  onClose={closeDetail}
+  onComplete={(id, done) => {
+    onUpdateTask(id, {
+      status: done ? 'done' : 'todo',
+      completedAt: done ? new Date().toISOString() : undefined,
+    });
+    closeDetail();
+  }}
+  onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
+  onEdit={(task) => { closeDetail(); onEditTask(task); }}
+  onDuplicate={(task) => {
+    const duplicate = {
+      ...task,
+      id: crypto.randomUUID(),
+      title: `${task.title} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'todo' as const,
+      completedAt: undefined,
+      timeTracking: task.timeTracking
+        ? { ...task.timeTracking, entries: [], totalTime: 0, isRunning: false, activeEntryId: undefined }
+        : undefined,
+    };
+    // Add it via store directly — need to expose addTask or use updateTask workaround
+    onEditTask(duplicate); // opens it in the dialog so user can save it
+    closeDetail();
+  }}
+/>
     </>
   );
 }

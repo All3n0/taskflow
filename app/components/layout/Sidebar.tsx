@@ -55,7 +55,7 @@ export function Sidebar({
             className="text-lg font-black tracking-tight"
             style={{ color: 'var(--sidebar-foreground)' }}
           >
-            kazora
+            kazistack
           </span>
         </div>
         <button

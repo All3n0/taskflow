@@ -37,7 +37,7 @@ export function useNotifications() {
             const taskId = options?.tag?.split('-')[0];
             if (taskId) {
               // Dispatch a custom event page.tsx can listen to
-              window.dispatchEvent(new CustomEvent('kazora:complete', {
+              window.dispatchEvent(new CustomEvent('kazistack:complete', {
                 detail: { taskId }
               }));
             }
@@ -61,7 +61,7 @@ export function useNotifications() {
         n.onclick = () => {
           const taskId = options?.tag?.split('-')[0];
           if (taskId) {
-            window.dispatchEvent(new CustomEvent('kazora:complete', {
+            window.dispatchEvent(new CustomEvent('kazistack:complete', {
               detail: { taskId }
             }));
           }
