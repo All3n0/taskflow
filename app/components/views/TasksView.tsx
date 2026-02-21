@@ -20,11 +20,17 @@ export function TasksView({ tasks, searchQuery, onUpdateTask, onDeleteTask, onEd
   const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
   const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
 
+  const handleComplete = (id: string, done: boolean) => {
+    onUpdateTask(id, {
+      status: done ? 'done' : 'todo',
+      completedAt: done ? new Date().toISOString() : undefined,
+    });
+  };
+
   const filtered = tasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // group by status
   const groups = {
     'in-progress': filtered.filter(t => t.status === 'in-progress'),
     'todo':        filtered.filter(t => t.status === 'todo'),
@@ -68,7 +74,6 @@ export function TasksView({ tasks, searchQuery, onUpdateTask, onDeleteTask, onEd
             </div>
           );
         })}
-
         {filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <p className="text-sm">No tasks found</p>
@@ -82,6 +87,7 @@ export function TasksView({ tasks, searchQuery, onUpdateTask, onDeleteTask, onEd
         onClose={closeDetail}
         onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
         onEdit={(task) => { closeDetail(); onEditTask(task); }}
+        onComplete={handleComplete}
       />
     </>
   );

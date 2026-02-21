@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Task, Status, Priority } from '../../types/task';
 
-const STORAGE_KEY = 'taskflow-tasks';
+const STORAGE_KEY = 'kazora-tasks';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 const defaultTasks: Task[] = [
   {
     id: generateId(),
-    title: 'Welcome to TaskFlow',
+    title: 'Welcome to kazora',
     description: 'This is your new productivity hub. Create tasks, organize projects, and stay focused.',
     status: 'todo',
     priority: 'medium',

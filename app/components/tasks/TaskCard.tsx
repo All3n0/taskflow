@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Clock, Timer, Play, Square } from 'lucide-react';
+import { Clock, Timer, Play, Square, CheckCircle2 } from 'lucide-react';
 import { Task, Priority, getTotalLoggedTime, secondsToTimeDisplay } from '../../types/task';
 import { cn } from '../utils';
 
@@ -40,6 +40,15 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
   const timeDisplay = secondsToTimeDisplay(totalSeconds);
   const dueDateStr = formatDueDate(task);
   const isOverdue = task.dueDate && task.status !== 'done' && new Date(task.dueDate) < new Date();
+  const isDone = task.status === 'done';
+
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUpdate(task.id, {
+      status: isDone ? 'todo' : 'done',
+      completedAt: isDone ? undefined : new Date().toISOString(),
+    });
+  };
 
   return (
     <motion.div
@@ -49,19 +58,46 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ y: -2 }}
       onClick={() => onEdit(task)}
-      className="group glass rounded-xl cursor-pointer transition-all hover:shadow-lg border border-border/50 hover:border-primary/20 overflow-hidden"
+      className={cn(
+        "group glass rounded-xl cursor-pointer transition-all hover:shadow-lg border border-border/50 hover:border-primary/20 overflow-hidden",
+        isDone && "opacity-60"
+      )}
     >
       {/* Priority accent bar */}
-      <div className={cn("h-0.5 w-full", priority.bar)} />
+      <div className={cn("h-0.5 w-full", isDone ? "bg-green-500" : priority.bar)} />
 
       <div className="p-4">
         {/* Title row */}
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-medium text-sm text-foreground leading-snug flex-1 min-w-0">
+        <div className="flex items-start gap-3">
+          {/* Complete checkbox */}
+          <button
+            onClick={handleComplete}
+            className={cn(
+              "flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5",
+              isDone
+                ? "bg-green-500 border-green-500"
+                : "border-border hover:border-green-500 hover:bg-green-500/10"
+            )}
+          >
+            {isDone && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              >
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              </motion.div>
+            )}
+          </button>
+
+          <h3 className={cn(
+            "font-medium text-sm text-foreground leading-snug flex-1 min-w-0",
+            isDone && "line-through text-muted-foreground"
+          )}>
             {task.title}
           </h3>
 
-          {onTimerToggle && (
+          {onTimerToggle && !isDone && (
             <button
               onClick={(e) => { e.stopPropagation(); onTimerToggle(task.id); }}
               className={cn(
@@ -77,16 +113,16 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
         </div>
 
         {task.description && (
-          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 ml-8">
             {task.description}
           </p>
         )}
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 mt-4 text-xs flex-wrap">
+        <div className="flex items-center gap-3 mt-4 text-xs flex-wrap ml-8">
           <div className="flex items-center gap-1.5">
-            <div className={cn("w-1.5 h-1.5 rounded-full", priority.dot)} />
-            <span className="text-muted-foreground">{priority.label}</span>
+            <div className={cn("w-1.5 h-1.5 rounded-full", isDone ? "bg-green-500" : priority.dot)} />
+            <span className="text-muted-foreground">{isDone ? 'Done' : priority.label}</span>
           </div>
 
           {dueDateStr && (

@@ -40,7 +40,7 @@ export function NotificationsView() {
   const handleEnableNotifications = async () => {
     const granted = await requestPermission();
     if (granted) {
-      sendNotification('TaskFlow Notifications Enabled! 🎉', {
+      sendNotification('kazora Notifications Enabled! 🎉', {
         body: 'You will now receive task reminders and updates.',
       });
     }

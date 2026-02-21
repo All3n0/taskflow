@@ -16,7 +16,7 @@ export function SettingsView({ tasks, onClearAllTasks }: SettingsViewProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `taskflow-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `kazora-export-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -36,7 +36,7 @@ export function SettingsView({ tasks, onClearAllTasks }: SettingsViewProps) {
         const text = await file.text();
         const imported = JSON.parse(text);
         if (Array.isArray(imported)) {
-          localStorage.setItem('taskflow-tasks', JSON.stringify(imported));
+          localStorage.setItem('kazora-tasks', JSON.stringify(imported));
           window.location.reload();
         }
       } catch {
@@ -48,7 +48,7 @@ export function SettingsView({ tasks, onClearAllTasks }: SettingsViewProps) {
 
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to delete all tasks? This cannot be undone.')) {
-      localStorage.removeItem('taskflow-tasks');
+      localStorage.removeItem('kazora-tasks');
       window.location.reload();
     }
   };
@@ -123,9 +123,9 @@ export function SettingsView({ tasks, onClearAllTasks }: SettingsViewProps) {
 
       {/* About */}
       <div className="glass rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-4">About TaskFlow</h2>
+        <h2 className="text-lg font-semibold mb-4">About kazora</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          TaskFlow is a modern, privacy-focused task management app. All your data stays
+          kazora is a modern, privacy-focused task management app. All your data stays
           on your device – we don't collect or store any personal information.
         </p>
         <p className="text-xs text-muted-foreground mt-4">

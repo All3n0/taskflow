@@ -14,39 +14,41 @@ import { cn } from '../../components/utils';
 interface CalendarViewProps {
   tasks: Task[];
   onEditTask: (task: Task) => void;
+  onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask: (id: string) => void;
 }
 
 const priorityDot: Record<Priority, string> = {
-  low:    'bg-muted-foreground',
-  medium: 'bg-primary',
-  high:   'bg-yellow-500',
-  urgent: 'bg-destructive',
+  low: 'bg-muted-foreground', medium: 'bg-primary',
+  high: 'bg-yellow-500', urgent: 'bg-destructive',
 };
-
 const priorityBar: Record<Priority, string> = {
-  low:    'bg-muted-foreground/40',
-  medium: 'bg-primary/70',
-  high:   'bg-yellow-500/70',
-  urgent: 'bg-destructive/70',
+  low: 'bg-muted-foreground/40', medium: 'bg-primary/70',
+  high: 'bg-yellow-500/70', urgent: 'bg-destructive/70',
 };
 
 const WEEK_DAYS_FULL  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEK_DAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
+export function CalendarView({ tasks, onEditTask, onUpdateTask, onDeleteTask }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDay, setSelectedDay]   = useState<Date | null>(null);
+  const [detailTask, setDetailTask]     = useState<Task | null>(null);
+  const [detailOpen, setDetailOpen]     = useState(false);
 
   const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
   const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd   = endOfMonth(currentMonth);
-  const days       = eachDayOfInterval({
-    start: startOfWeek(monthStart),
-    end:   endOfWeek(monthEnd),
+  const handleComplete = (id: string, done: boolean) => {
+    onUpdateTask(id, {
+      status: done ? 'done' : 'todo',
+      completedAt: done ? new Date().toISOString() : undefined,
+    });
+  };
+
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(currentMonth)),
+    end:   endOfWeek(endOfMonth(currentMonth)),
   });
 
   const getTasksForDay = (date: Date) =>
@@ -56,51 +58,36 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-4"
-      >
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">
               {format(currentMonth, 'MMMM')}
-              <span className="text-muted-foreground font-light ml-2">
-                {format(currentMonth, 'yyyy')}
-              </span>
+              <span className="text-muted-foreground font-light ml-2">{format(currentMonth, 'yyyy')}</span>
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               {tasks.filter(t => t.dueDate && isSameMonth(new Date(t.dueDate), currentMonth)).length} tasks this month
             </p>
           </div>
-
           <div className="flex items-center gap-1">
             <button
               onClick={() => setCurrentMonth(new Date())}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 transition-colors mr-1"
             >
-              <CalendarDays className="w-3 h-3" />
-              Today
+              <CalendarDays className="w-3 h-3" /> Today
             </button>
-            <button
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-2 rounded-xl hover:bg-secondary transition-colors"
-            >
+            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 rounded-xl hover:bg-secondary transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-2 rounded-xl hover:bg-secondary transition-colors"
-            >
+            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 rounded-xl hover:bg-secondary transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Calendar grid */}
+        {/* Grid */}
         <div className="glass rounded-2xl overflow-hidden border border-border/50">
-          {/* Weekday headers */}
           <div className="grid grid-cols-7 border-b border-border/50 bg-secondary/20">
             {WEEK_DAYS_FULL.map((d, i) => (
               <div key={d} className="py-2.5 text-center">
@@ -109,15 +96,12 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
               </div>
             ))}
           </div>
-
-          {/* Day cells */}
           <div className="grid grid-cols-7">
             {days.map((day, i) => {
               const dayTasks   = getTasksForDay(day);
               const inMonth    = isSameMonth(day, currentMonth);
               const isTodays   = isToday(day);
               const isSelected = selectedDay && isSameDay(day, selectedDay);
-
               return (
                 <motion.button
                   key={day.toString()}
@@ -132,7 +116,6 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
                     isSelected && "bg-primary/5 ring-1 ring-inset ring-primary/30",
                   )}
                 >
-                  {/* Day number */}
                   <span className={cn(
                     "inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm font-bold mb-1",
                     isTodays && "bg-primary text-primary-foreground",
@@ -141,38 +124,30 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
                   )}>
                     {format(day, 'd')}
                   </span>
-
-                  {/* Task pills — desktop shows text, mobile shows dots */}
                   <div className="space-y-0.5">
-                    {/* Desktop: text pills */}
                     {dayTasks.slice(0, 2).map(task => (
                       <div
                         key={task.id}
+                        onClick={e => { e.stopPropagation(); openDetail(task); }}
                         className={cn(
                           "hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate",
-                          "bg-secondary/60 hover:bg-secondary transition-colors"
+                          "bg-secondary/60 hover:bg-secondary transition-colors",
+                          task.status === 'done' && "opacity-50 line-through"
                         )}
-                        onClick={e => { e.stopPropagation(); openDetail(task); }}
                       >
-                        <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", priorityDot[task.priority])} />
+                        <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", task.status === 'done' ? 'bg-green-500' : priorityDot[task.priority])} />
                         <span className="truncate">{task.title}</span>
                       </div>
                     ))}
                     {dayTasks.length > 2 && (
-                      <p className="hidden sm:block text-[9px] text-muted-foreground pl-1.5">
-                        +{dayTasks.length - 2} more
-                      </p>
+                      <p className="hidden sm:block text-[9px] text-muted-foreground pl-1.5">+{dayTasks.length - 2} more</p>
                     )}
-
-                    {/* Mobile: colored dots only */}
                     {dayTasks.length > 0 && (
                       <div className="flex sm:hidden gap-0.5 flex-wrap mt-0.5">
                         {dayTasks.slice(0, 3).map(task => (
-                          <div key={task.id} className={cn("w-1.5 h-1.5 rounded-full", priorityDot[task.priority])} />
+                          <div key={task.id} className={cn("w-1.5 h-1.5 rounded-full", task.status === 'done' ? 'bg-green-500' : priorityDot[task.priority])} />
                         ))}
-                        {dayTasks.length > 3 && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-                        )}
+                        {dayTasks.length > 3 && <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />}
                       </div>
                     )}
                   </div>
@@ -182,7 +157,7 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
           </div>
         </div>
 
-        {/* Selected day task list */}
+        {/* Selected day panel */}
         <AnimatePresence>
           {selectedDay && (
             <motion.div
@@ -195,21 +170,11 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
               <div className="glass rounded-2xl p-4 sm:p-5 border border-border/50">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="font-black text-sm">
-                      {format(selectedDay, 'EEEE, MMMM d')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedDayTasks.length} task{selectedDayTasks.length !== 1 ? 's' : ''}
-                    </p>
+                    <h3 className="font-black text-sm">{format(selectedDay, 'EEEE, MMMM d')}</h3>
+                    <p className="text-xs text-muted-foreground">{selectedDayTasks.length} task{selectedDayTasks.length !== 1 ? 's' : ''}</p>
                   </div>
-                  <button
-                    onClick={() => setSelectedDay(null)}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Close
-                  </button>
+                  <button onClick={() => setSelectedDay(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Close</button>
                 </div>
-
                 {selectedDayTasks.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">No tasks due this day</p>
                 ) : (
@@ -220,20 +185,21 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         onClick={() => openDetail(task)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors text-left group"
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors text-left group",
+                          task.status === 'done' && "opacity-50"
+                        )}
                       >
-                        <div className={cn("w-1 h-8 rounded-full flex-shrink-0", priorityBar[task.priority])} />
+                        <div className={cn("w-1 h-8 rounded-full flex-shrink-0", task.status === 'done' ? 'bg-green-500' : priorityBar[task.priority])} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                          <p className={cn("text-sm font-semibold truncate group-hover:text-primary transition-colors", task.status === 'done' && "line-through")}>
                             {task.title}
                           </p>
-                          {task.description && (
-                            <p className="text-xs text-muted-foreground truncate">{task.description}</p>
-                          )}
+                          {task.description && <p className="text-xs text-muted-foreground truncate">{task.description}</p>}
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <div className={cn("w-2 h-2 rounded-full", priorityDot[task.priority])} />
-                          <span className="text-[10px] text-muted-foreground capitalize">{task.priority}</span>
+                          <div className={cn("w-2 h-2 rounded-full", task.status === 'done' ? 'bg-green-500' : priorityDot[task.priority])} />
+                          <span className="text-[10px] text-muted-foreground capitalize">{task.status === 'done' ? 'Done' : task.priority}</span>
                         </div>
                       </motion.button>
                     ))}
@@ -244,7 +210,7 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
           )}
         </AnimatePresence>
 
-        {/* Priority legend */}
+        {/* Legend */}
         <div className="flex items-center gap-4 sm:gap-6 text-xs text-muted-foreground flex-wrap">
           <span className="font-bold text-[10px] uppercase tracking-widest">Priority</span>
           {Object.entries(priorityDot).map(([p, color]) => (
@@ -260,8 +226,15 @@ export function CalendarView({ tasks, onEditTask }: CalendarViewProps) {
         task={detailTask}
         open={detailOpen}
         onClose={closeDetail}
-        onDelete={() => closeDetail()}
+        onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
         onEdit={(task) => { closeDetail(); onEditTask(task); }}
+        onComplete={(id, done) => {
+  onUpdateTask(id, {
+    status: done ? 'done' : 'todo',
+    completedAt: done ? new Date().toISOString() : undefined,
+  });
+  closeDetail(); // ← THIS is what was missing
+}}
       />
     </>
   );

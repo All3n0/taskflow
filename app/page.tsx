@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { TaskDialog } from './components/tasks/TaskDialog';
@@ -12,6 +13,7 @@ import { CalendarView } from './components/views/CalendarView';
 import { NotificationsView } from './components/views/NotificationsView';
 import { SettingsView } from './components/views/SettingsView';
 import { useTaskStore } from './components/hooks/useTaskStore';
+import { useTaskReminders } from './components/hooks/useTaskReminders';
 import { Task, Status } from './types/task';
 
 const viewTitles: Record<string, { title: string; subtitle?: string }> = {
@@ -32,6 +34,20 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { tasks, addTask, updateTask, deleteTask, isLoaded } = useTaskStore();
+
+  // 🔔 Auto-fires reminders when task due times are reached
+  useTaskReminders(tasks);
+
+  // ✅ Listen for "mark done" events fired from OS notification clicks or toast buttons
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { taskId } = (e as CustomEvent).detail;
+      updateTask(taskId, { status: 'done' });
+      toast.success('Task marked as done! ✓');
+    };
+    window.addEventListener('kazora:complete', handler);
+    return () => window.removeEventListener('kazora:complete', handler);
+  }, [updateTask]);
 
   const urgentTasks = useMemo(
     () => tasks.filter(t => t.priority === 'urgent' || t.priority === 'high').length,
@@ -69,15 +85,15 @@ export default function Home() {
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
-    setIsMobileMenuOpen(false); // close mobile menu on nav
+    setIsMobileMenuOpen(false);
   };
 
   const handleClearAllTasks = () => {
-    localStorage.removeItem('taskflow-tasks');
+    localStorage.removeItem('kazora-tasks');
     window.location.reload();
   };
 
-  const viewInfo = viewTitles[activeView] || { title: 'TaskFlow' };
+  const viewInfo = viewTitles[activeView] || { title: 'kazora' };
 
   if (!isLoaded) {
     return (
@@ -89,7 +105,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar — handles its own mobile/desktop visibility internally */}
       <Sidebar
         activeView={activeView}
         onViewChange={handleViewChange}
@@ -98,13 +113,8 @@ export default function Home() {
         onMobileMenuClose={() => setIsMobileMenuOpen(false)}
       />
 
-      {/*
-        KEY FIX:
-        - Mobile (default): no left margin, full width
-        - Desktop (lg+): push right by sidebar width
-      */}
       <div className="lg:ml-64 min-h-screen flex flex-col">
-        { activeView !== 'settings' && (
+        {activeView !== 'settings' && (
           <Header
             title={viewInfo.title}
             subtitle={viewInfo.subtitle}
@@ -112,19 +122,21 @@ export default function Home() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onMenuClick={() => setIsMobileMenuOpen(true)}
+            tasks={tasks}
+            onViewChange={handleViewChange}          
           />
         )}
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             {activeView === 'dashboard' && (
-              <DashboardView
-                key="dashboard"
-                tasks={tasks}
-                onEditTask={handleEditTask}
-                onUpdateTask={updateTask}
-                onDeleteTask={deleteTask}
-              />
+             <DashboardView
+    key="dashboard"
+    tasks={tasks}
+    onEditTask={handleEditTask}
+    onUpdateTask={updateTask}       // ← already there
+    onDeleteTask={deleteTask}
+  />
             )}
             {activeView === 'tasks' && (
               <TasksView
@@ -148,10 +160,12 @@ export default function Home() {
             )}
             {activeView === 'calendar' && (
               <CalendarView
-                key="calendar"
-                tasks={tasks}
-                onEditTask={handleEditTask}
-              />
+    key="calendar"
+    tasks={tasks}
+    onEditTask={handleEditTask}
+    onUpdateTask={updateTask}       // ← add this
+    onDeleteTask={deleteTask}       // ← add this
+  />
             )}
             {activeView === 'notifications' && (
               <NotificationsView key="notifications" />

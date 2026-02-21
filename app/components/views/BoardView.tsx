@@ -15,18 +15,11 @@ interface BoardViewProps {
   onAddTask: (status: Status) => void;
 }
 
-interface Column {
-  id: Status;
-  title: string;
-  dot: string;
-  header: string;
-}
-
-const columns: Column[] = [
-  { id: 'backlog',     title: 'Backlog',      dot: 'bg-muted-foreground', header: 'border-muted-foreground/30' },
-  { id: 'todo',        title: 'To Do',         dot: 'bg-primary',          header: 'border-primary/30' },
-  { id: 'in-progress', title: 'In Progress',   dot: 'bg-yellow-500',       header: 'border-yellow-500/30' },
-  { id: 'done',        title: 'Done',          dot: 'bg-green-500',        header: 'border-green-500/30' },
+const columns = [
+  { id: 'backlog'     as Status, title: 'Backlog',     dot: 'bg-muted-foreground', header: 'border-muted-foreground/30' },
+  { id: 'todo'        as Status, title: 'To Do',        dot: 'bg-primary',          header: 'border-primary/30' },
+  { id: 'in-progress' as Status, title: 'In Progress',  dot: 'bg-yellow-500',       header: 'border-yellow-500/30' },
+  { id: 'done'        as Status, title: 'Done',         dot: 'bg-green-500',        header: 'border-green-500/30' },
 ];
 
 export function BoardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAddTask }: BoardViewProps) {
@@ -36,29 +29,30 @@ export function BoardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAdd
   const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
   const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
 
-  const getTasksByStatus = (status: Status) => tasks.filter(t => t.status === status);
+  const handleComplete = (id: string, done: boolean) => {
+    onUpdateTask(id, {
+      status: done ? 'done' : 'todo',
+      completedAt: done ? new Date().toISOString() : undefined,
+    });
+  };
 
   return (
     <>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        // Horizontal scroll on mobile, grid on desktop
         className="flex gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible"
       >
         {columns.map((column, colIndex) => {
-          const columnTasks = getTasksByStatus(column.id);
-
+          const columnTasks = tasks.filter(t => t.status === column.id);
           return (
             <motion.div
               key={column.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: colIndex * 0.07 }}
-              // Fixed width on mobile so it scrolls nicely, auto on desktop
               className="flex flex-col flex-shrink-0 w-[280px] sm:w-auto"
             >
-              {/* Column header */}
               <div className={cn(
                 "flex items-center justify-between mb-3 px-3 py-2.5 rounded-xl border bg-secondary/20",
                 column.header
@@ -78,7 +72,6 @@ export function BoardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAdd
                 </button>
               </div>
 
-              {/* Cards */}
               <div className="flex-1 space-y-2.5 min-h-[120px] p-2.5 rounded-xl bg-secondary/20 border border-border/40">
                 <AnimatePresence mode="popLayout">
                   {columnTasks.map(task => (
@@ -91,19 +84,17 @@ export function BoardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAdd
                     />
                   ))}
                 </AnimatePresence>
-
                 {columnTasks.length === 0 && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center h-20 gap-2"
+                    className="flex items-center justify-center h-20"
                   >
                     <button
                       onClick={() => onAddTask(column.id)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Plus className="w-3 h-3" />
-                      Add task
+                      <Plus className="w-3 h-3" /> Add task
                     </button>
                   </motion.div>
                 )}
@@ -119,6 +110,7 @@ export function BoardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, onAdd
         onClose={closeDetail}
         onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
         onEdit={(task) => { closeDetail(); onEditTask(task); }}
+        onComplete={handleComplete}
       />
     </>
   );
