@@ -1,268 +1,226 @@
-Kazistack - Modern Task Management System
-https:///public/kazistacklogo.png
 
-📋 Overview
-Kazistack is a sophisticated, feature-rich task management application built with Next.js 15, TypeScript, and Tailwind CSS. It provides users with a seamless experience for organizing, tracking, and completing tasks across multiple views with beautiful animations and a customizable interface.
+# Kazistack - Modern Task Management System
 
-Live Demo: https://kazistack.vercel.app
-Author: Allan Kiprop
+<div align="center">
+  <img src="/public/kazistacklogo.png" alt="Kazistack Logo" width="120" height="120" />
+  <p><strong>Stack your tasks. Stack your wins.</strong></p>
+  
+  [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://kazistack.vercel.app)
+  [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+  [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38b2ac?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+</div>
 
-✨ Key Features
-📊 Multiple View Modes
-Dashboard View: Overview of productivity stats, due today tasks, and recent activity
+## 📋 Overview
 
-Tasks View: Comprehensive list of all tasks with search functionality
+Kazistack is a sophisticated, feature-rich task management application built with **Next.js 15**, **TypeScript**, and **Tailwind CSS**. It provides users with a seamless experience for organizing, tracking, and completing tasks across multiple views with beautiful animations and a customizable interface.
 
-Board View: Kanban-style board for visual task management
+**Live Demo:** [https://kazistack.vercel.app](https://kazistack.vercel.app)  
+**Author:** [Allan Kiprop](https://allan-k.vercel.app)
 
-Calendar View: Calendar-based task organization by due dates
+---
 
-Notifications View: Centralized notification center for alerts
+## ✨ Key Features
 
-Settings View: Extensive customization options
+### 📊 Multiple View Modes
+| View | Description |
+|------|-------------|
+| **Dashboard** | Overview of productivity stats, due today tasks, and recent activity |
+| **Tasks** | Comprehensive list of all tasks with search functionality |
+| **Board** | Kanban-style board for visual task management |
+| **Calendar** | Calendar-based task organization by due dates |
+| **Notifications** | Centralized notification center for alerts |
+| **Settings** | Extensive customization options |
 
-🔔 Smart Notifications System
-Browser push notifications for task reminders
+### 🔔 Smart Notifications System
+- Browser push notifications for task reminders
+- Due soon alerts (30 minutes before deadline)
+- Overdue task notifications
+- Daily digest at 8 AM
+- Customizable sound preferences with 6 sound options
+- Notification center with categorized alerts (Overdue, Due Soon, High Priority)
 
-Due soon alerts (30 minutes before deadline)
+### 🎨 Customizable Appearance
+- **Theme Support:** Light, Dark, and System themes
+- **Accent Colors:** 7 vibrant color options
+  - Cyan | Indigo | Violet | Emerald | Rose | Amber | Orange
+- **Compact Mode:** Toggle for reduced spacing
+- Real-time preview of color changes
+- Persistent preferences via localStorage
 
-Overdue task notifications
+### ⏱️ Time Tracking
+- Log time spent on tasks
+- Track active timers
+- View total time logged per task
+- Time estimates and progress tracking
 
-Daily digest at 8 AM
+### 🔍 Powerful Search
+- Global search across all tasks
+- Search by title, description, and tags
+- Real-time filtering
+- Search results persist across views
 
-Customizable sound preferences with 6 sound options
+### 📱 Responsive Design
+- Mobile-optimized sidebar drawer
+- Adaptive layouts for all screen sizes
+- Touch-friendly interactions
+- Smooth animations with Framer Motion
 
-Notification center with categorized alerts (Overdue, Due Soon, High Priority)
+### 💾 Data Management
+- Local storage persistence (no server required)
+- Export data to JSON or CSV
+- Import/backup functionality
+- Clear all tasks with confirmation
 
-🎨 Customizable Appearance
-Theme Support: Light, Dark, and System themes
+### 🔧 Browser Extension Support
+- Downloadable browser extension
+- Floating task counter on any webpage
+- Quick task completion without opening the app
+- Cross-browser support (Chrome, Edge, Brave)
 
-Accent Colors: 7 vibrant color options (Cyan, Indigo, Violet, Emerald, Rose, Amber, Orange)
+---
 
-Compact Mode: Toggle for reduced spacing
+## 🏗️ Architecture
 
-Real-time preview of color changes
+### Tech Stack
+| Technology | Purpose |
+|------------|---------|
+| **Next.js 15** | React framework with App Router |
+| **TypeScript** | Type safety and developer experience |
+| **Tailwind CSS v4** | Styling and utilities |
+| **Framer Motion** | Smooth animations and transitions |
+| **Sonner** | Toast notifications |
+| **Web Notifications API** | Browser push notifications |
+| **date-fns** | Date manipulation and formatting |
+| **Lucide React** | Beautiful icons |
+| **React Hooks + Context** | State management |
+| **localStorage** | Data persistence |
 
-Persistent preferences via localStorage
-
-⏱️ Time Tracking
-Log time spent on tasks
-
-Track active timers
-
-View total time logged per task
-
-Time estimates and progress tracking
-
-🔍 Powerful Search
-Global search across all tasks
-
-Search by title, description, and tags
-
-Real-time filtering
-
-Search results persist across views
-
-📱 Responsive Design
-Mobile-optimized sidebar drawer
-
-Adaptive layouts for all screen sizes
-
-Touch-friendly interactions
-
-Smooth animations with Framer Motion
-
-💾 Data Management
-Local storage persistence (no server required)
-
-Export data to JSON or CSV
-
-Import/backup functionality
-
-Clear all tasks with confirmation
-
-🔧 Browser Extension Support
-Downloadable browser extension
-
-Floating task counter on any webpage
-
-Quick task completion without opening the app
-
-Cross-browser support (Chrome, Edge, Brave)
-
-🏗️ Architecture
-Tech Stack
-Framework: Next.js 15 (App Router)
-
-Language: TypeScript
-
-Styling: Tailwind CSS v4
-
-Animations: Framer Motion
-
-Notifications: Sonner + Web Notifications API
-
-Date Handling: date-fns
-
-Icons: Lucide React
-
-State Management: React Hooks + Context
-
-Storage: localStorage
-
-Project Structure
-text
+### Project Structure
 kazistack/
 ├── app/
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   ├── Footer.tsx
-│   │   │   └── ThemeToggle.tsx
-│   │   ├── tasks/
-│   │   │   ├── TaskCard.tsx
-│   │   │   ├── TaskDialog.tsx
-│   │   │   └── TaskDetailPopup.tsx
-│   │   ├── views/
-│   │   │   ├── DashboardView.tsx
-│   │   │   ├── TasksView.tsx
-│   │   │   ├── BoardView.tsx
-│   │   │   ├── CalendarView.tsx
-│   │   │   ├── NotificationsView.tsx
-│   │   │   └── SettingsView.tsx
-│   │   ├── ui/
-│   │   │   ├── Button.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── label.tsx
-│   │   │   ├── select.tsx
-│   │   │   └── calendar.tsx
-│   │   └── hooks/
-│   │       ├── useTaskStore.ts
-│   │       ├── useTaskReminders.ts
-│   │       ├── useNotifications.ts
-│   │       └── useAccentColor.ts
-│   ├── providers/
-│   │   └── theme-provider.tsx
-│   ├── types/
-│   │   └── task.ts
-│   ├── utils/
-│   │   └── index.ts
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
+│ ├── components/
+│ │ ├── layout/
+│ │ │ ├── Sidebar.tsx
+│ │ │ ├── Header.tsx
+│ │ │ ├── Footer.tsx
+│ │ │ └── ThemeToggle.tsx
+│ │ ├── tasks/
+│ │ │ ├── TaskCard.tsx
+│ │ │ ├── TaskDialog.tsx
+│ │ │ └── TaskDetailPopup.tsx
+│ │ ├── views/
+│ │ │ ├── DashboardView.tsx
+│ │ │ ├── TasksView.tsx
+│ │ │ ├── BoardView.tsx
+│ │ │ ├── CalendarView.tsx
+│ │ │ ├── NotificationsView.tsx
+│ │ │ └── SettingsView.tsx
+│ │ ├── ui/
+│ │ │ ├── Button.tsx
+│ │ │ ├── input.tsx
+│ │ │ ├── label.tsx
+│ │ │ ├── select.tsx
+│ │ │ └── calendar.tsx
+│ │ └── hooks/
+│ │ ├── useTaskStore.ts
+│ │ ├── useTaskReminders.ts
+│ │ ├── useNotifications.ts
+│ │ └── useAccentColor.ts
+│ ├── contexts/
+│ │ └── TutorialContext.tsx
+│ ├── providers/
+│ │ └── theme-provider.tsx
+│ ├── types/
+│ │ └── task.ts
+│ ├── utils/
+│ │ └── index.ts
+│ ├── globals.css
+│ ├── layout.tsx
+│ └── page.tsx
 ├── public/
-│   ├── kazistacklogo.png
-│   ├── favicon.ico
-│   ├── notification.mp3
-│   └── sounds/
-│       ├── chime.mp3
-│       ├── pop.mp3
-│       ├── ding.mp3
-│       ├── whoosh.mp3
-│       └── marimba.mp3
+│ ├── kazistacklogo.png
+│ ├── favicon.ico
+│ ├── kazistack.svg
+│ ├── notification.mp3
+│ └── sounds/
+│ ├── chime.mp3
+│ ├── pop.mp3
+│ ├── ding.mp3
+│ ├── whoosh.mp3
+│ └── marimba.mp3
 ├── package.json
 └── README.md
-🧩 Core Components
-Sidebar (Sidebar.tsx)
-Persistent navigation with active state indicators
 
-Mobile-responsive drawer with animations
+text
 
-Notification badge for urgent tasks
+---
 
-Smooth hover effects and transitions
+## 🧩 Core Components
 
-Kazistack logo integration
+### Sidebar (`Sidebar.tsx`)
+- Persistent navigation with active state indicators
+- Mobile-responsive drawer with animations
+- Notification badge for urgent tasks
+- Smooth hover effects and transitions
+- Kazistack logo integration
 
-Header (Header.tsx)
-Dynamic title and subtitle based on active view
+### Header (`Header.tsx`)
+- Dynamic title and subtitle based on active view
+- Global search with mobile expansion
+- Theme toggle integration
+- Notification bell with dropdown menu
+- Quick task creation button
 
-Global search with mobile expansion
+### Footer (`Footer.tsx`)
+- Professional 4-column layout
+- Kazistack branding with gradient text
+- Built by Allan Kiprop link to portfolio
+- Quick navigation links
+- Social media connections
+- Scroll-to-top button
+- Legal links and version info
 
-Theme toggle integration
+### TaskDialog (`TaskDialog.tsx`)
+- Create and edit tasks
+- Priority selection (Low, Medium, High, Urgent)
+- Status selection (Backlog, To Do, In Progress, Done)
+- Due date picker with time selection
+- Full-day toggle for deadlines
+- Animated form elements
 
-Notification bell with dropdown menu
+### TaskDetailPopup (`TaskDetailPopup.tsx`)
+- Detailed task view with animations
+- Priority and status indicators
+- Time tracking display
+- Tags visualization
+- Complete/Incomplete toggle
+- Edit and delete actions
+- Three-dot menu with additional options:
+  - Duplicate task
+  - Copy link
+  - Bookmark
+  - Archive
+  - Set reminder
+  - Share
+  - Print
+  - Assign
+  - Move to project
 
-Quick task creation button
+### TaskCard (`TaskCard.tsx`)
+- Compact task representation
+- Priority color coding
+- Due date with overdue indicator
+- Time tracking badge
+- Quick status toggle
+- Click to open detailed view
 
-Footer (Footer.tsx)
-Professional 4-column layout
+---
 
-Kazistack branding with gradient text
+## 🎯 Key Functionality
 
-Built by Allan Kiprop link to portfolio
-
-Quick navigation links
-
-Social media connections
-
-Scroll-to-top button
-
-Legal links and version info
-
-TaskDialog (TaskDialog.tsx)
-Create and edit tasks
-
-Priority selection (Low, Medium, High, Urgent)
-
-Status selection (Backlog, To Do, In Progress, Done)
-
-Due date picker with time selection
-
-Full-day toggle for deadlines
-
-Animated form elements
-
-TaskDetailPopup (TaskDetailPopup.tsx)
-Detailed task view with animations
-
-Priority and status indicators
-
-Time tracking display
-
-Tags visualization
-
-Complete/Incomplete toggle
-
-Edit and delete actions
-
-Three-dot menu with additional options:
-
-Duplicate task
-
-Copy link
-
-Bookmark
-
-Archive
-
-Set reminder
-
-Share
-
-Print
-
-Assign
-
-Move to project
-
-TaskCard (TaskCard.tsx)
-Compact task representation
-
-Priority color coding
-
-Due date with overdue indicator
-
-Time tracking badge
-
-Quick status toggle
-
-Click to open detailed view
-
-🎯 Key Functionality
-Task Management
-typescript
+### Task Management
+```typescript
 // Task interface
 interface Task {
   id: string;
@@ -305,30 +263,26 @@ Export/Import functionality
 Automatic state hydration
 
 Keyboard Shortcuts
-⌘D / Ctrl+D - Bookmark page
-
-⌘K - Quick task creation
-
-Esc - Close modals/popups
-
+Shortcut	Action
+⌘D / Ctrl+D	Bookmark page
+⌘K	Quick task creation
+Esc	Close modals/popups
 🎨 Design System
 Color Scheme
-Primary: Dynamic accent color (user-selectable)
-
-Background: Adaptive light/dark mode
-
-Secondary: Subtle backgrounds for cards
-
-Destructive: Red for dangerous actions
-
-Success: Green for completed tasks
-
+Color	Usage
+Primary	Dynamic accent color (user-selectable)
+Background	Adaptive light/dark mode
+Secondary	Subtle backgrounds for cards
+Destructive	Red for dangerous actions
+Success	Green for completed tasks
 Typography
-Font Family: Inter (system font stack fallback)
-
-Heading Sizes: 2xl (32px) to xs (12px)
-
-Font Weights: Black (900) to Medium (500)
+Element	Size	Weight
+Headings	32px (2xl)	Black (900)
+Subheadings	24px (xl)	Bold (700)
+Body	16px (base)	Medium (500)
+Small	14px (sm)	Regular (400)
+Tiny	12px (xs)	Regular (400)
+Font Family: Inter (with system font stack fallback)
 
 Animations
 Page transitions with Framer Motion
@@ -350,7 +304,7 @@ npm or yarn
 Installation
 bash
 # Clone the repository
-git clone https://github.com/allakiprop/kazistack.git
+git clone https://github.com/all3n0/taskflow.git
 
 # Navigate to project directory
 cd kazistack
@@ -368,6 +322,9 @@ Build for Production
 bash
 npm run build
 npm start
+# or
+yarn build
+yarn start
 🔧 Configuration
 Environment Variables
 Create a .env.local file:
@@ -375,19 +332,17 @@ Create a .env.local file:
 env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 Adding Custom Sounds
-Place .mp3 files in /public/sounds/ and update the SOUND_OPTIONS array in SettingsView.tsx.
+Place .mp3 files in /public/sounds/
+
+Update the SOUND_OPTIONS array in SettingsView.tsx
 
 📊 Performance
-Lighthouse Scores: 95+ across all categories
-
-Code Splitting: Automatic by Next.js
-
-Image Optimization: Next.js Image component
-
-Bundle Size: Optimized with tree shaking
-
-Caching: Service worker ready for PWA
-
+Metric	Score
+Lighthouse	95+ across all categories
+Code Splitting	Automatic by Next.js
+Image Optimization	Next.js Image component
+Bundle Size	Optimized with tree shaking
+Caching	Service worker ready for PWA
 🔒 Privacy & Security
 No User Accounts: All data stored locally
 
@@ -399,6 +354,17 @@ Local Storage Only: Data never leaves your device
 
 Export Control: Full data ownership
 
+📱 PWA Support
+Kazistack is configured as a Progressive Web App:
+
+✅ Installable on desktop and mobile
+
+✅ Offline support
+
+✅ Push notifications
+
+✅ Home screen icon
+
 🧪 Testing
 bash
 # Run unit tests
@@ -409,25 +375,14 @@ npm run test:e2e
 
 # Check types
 npm run type-check
-📱 PWA Support
-Kazistack is configured as a Progressive Web App:
-
-Installable on desktop and mobile
-
-Offline support
-
-Push notifications
-
-Home screen icon
-
 🤝 Contributing
 Fork the repository
 
-Create feature branch (git checkout -b feature/amazing)
+Create feature branch (git checkout -b feature/amazing-feature)
 
 Commit changes (git commit -m 'Add amazing feature')
 
-Push to branch (git push origin feature/amazing)
+Push to branch (git push origin feature/amazing-feature)
 
 Open a Pull Request
 
@@ -437,11 +392,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 👨‍💻 Author
 Allan Kiprop
 
-Portfolio: https://alla-k.vercel.app
+Portfolio: https://allan-k.vercel.app
 
-GitHub: @allakiprop
+GitHub: @all3n0
 
-Twitter: @allankiprop
+
+LinkedIn: Allan Kiprop
 
 🙏 Acknowledgments
 Next.js team for the amazing framework
@@ -457,3 +413,4 @@ All contributors and users
 📞 Support
 For support, email support@kazistack.com or open an issue on GitHub.
 
+<div align="center"> <br /> <sub>© 2025 Kazistack. All rights reserved.</sub> </div> ```

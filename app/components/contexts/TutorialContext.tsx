@@ -237,7 +237,7 @@ export type TutorialStep = typeof TUTORIAL_STEPS[number];
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
+  const [hasSeenTutorial, setHasSeenTutorial] = useState<boolean | null>(null); // Start with null to indicate loading
   const [activeView, setActiveView] = useState<string>('dashboard');
   const [isFromSettings, setIsFromSettings] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -252,20 +252,30 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Check if user has seen tutorial before
+  // Check if user has seen tutorial before - ONLY ONCE
   useEffect(() => {
-    const seen = localStorage.getItem('kazistack-tutorial-seen');
-    if (!seen) {
-      // First time user - show tutorial after a small delay
-      const timer = setTimeout(() => {
-        setShowTutorial(true);
-        setIsFromSettings(false);
-      }, 1500);
-      return () => clearTimeout(timer);
-    } else {
-      setHasSeenTutorial(true);
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const seen = localStorage.getItem('kazistack-tutorial-seen');
+      
+      if (seen === 'true') {
+        setHasSeenTutorial(true);
+        setShowTutorial(false); // Ensure tutorial is hidden
+      } else {
+        // First time user - set flag but DON'T show tutorial automatically
+        // The tutorial should ONLY be shown when triggered from Settings
+        localStorage.setItem('kazistack-tutorial-seen', 'true');
+        setHasSeenTutorial(false);
+        setShowTutorial(false); // Don't show automatically
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      setHasSeenTutorial(false);
+      setShowTutorial(false);
     }
-  }, []);
+  }, []); // Empty dependency array - runs once on mount
 
   // Auto-navigate when step changes
   useEffect(() => {
@@ -278,6 +288,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, [currentStep, showTutorial, activeView]);
 
   const startTutorial = () => {
+    console.log('Starting tutorial from Settings');
     setShowTutorial(true);
     setCurrentStep(0);
     setActiveView('dashboard');
@@ -286,13 +297,11 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const skipTutorial = () => {
     setShowTutorial(false);
-    localStorage.setItem('kazistack-tutorial-seen', 'true');
     setHasSeenTutorial(true);
   };
 
   const completeTutorial = () => {
     setShowTutorial(false);
-    localStorage.setItem('kazistack-tutorial-seen', 'true');
     setHasSeenTutorial(true);
   };
 
@@ -313,6 +322,11 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const goToStep = (step: number) => {
     setCurrentStep(Math.min(step, TUTORIAL_STEPS.length - 1));
   };
+
+  // Don't render children until we've checked localStorage
+  if (hasSeenTutorial === null) {
+    return null; // or a loading spinner
+  }
 
   return (
     <TutorialContext.Provider value={{
