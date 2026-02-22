@@ -51,7 +51,7 @@ export function TasksView({ tasks, searchQuery, onUpdateTask, onDeleteTask, onEd
         {Object.entries(groups).map(([status, groupTasks]) => {
           if (groupTasks.length === 0) return null;
           return (
-            <div key={status}>
+            <div key={status} className="tasks-group" data-status={status}>
               <div className="flex items-center gap-2 mb-3">
                 <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   {groupLabels[status]}

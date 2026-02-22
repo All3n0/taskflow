@@ -59,12 +59,17 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
       whileHover={{ y: -2 }}
       onClick={() => onEdit(task)}
       className={cn(
-        "group glass rounded-xl cursor-pointer transition-all hover:shadow-lg border border-border/50 hover:border-primary/20 overflow-hidden",
+        "group glass rounded-xl cursor-pointer transition-all hover:shadow-lg border border-border/50 hover:border-primary/20 overflow-hidden task-card",
         isDone && "opacity-60"
       )}
+      data-task-id={task.id}
+      data-priority={task.priority}
+      data-status={task.status}
+      data-has-due-date={!!task.dueDate}
+      data-overdue={isOverdue}
     >
       {/* Priority accent bar */}
-      <div className={cn("h-0.5 w-full", isDone ? "bg-green-500" : priority.bar)} />
+      <div className={cn("h-0.5 w-full", isDone ? "bg-green-500" : priority.bar)} data-testid="priority-bar" />
 
       <div className="p-4">
         {/* Title row */}
@@ -73,11 +78,13 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
           <button
             onClick={handleComplete}
             className={cn(
-              "flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5",
+              "flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 complete-button",
               isDone
                 ? "bg-green-500 border-green-500"
                 : "border-border hover:border-green-500 hover:bg-green-500/10"
             )}
+            data-testid={`complete-button-${task.id}`}
+            data-task-status={task.status}
           >
             {isDone && (
               <motion.div
@@ -91,7 +98,7 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
           </button>
 
           <h3 className={cn(
-            "font-medium text-sm text-foreground leading-snug flex-1 min-w-0",
+            "font-medium text-sm text-foreground leading-snug flex-1 min-w-0 task-title",
             isDone && "line-through text-muted-foreground"
           )}>
             {task.title}
@@ -101,11 +108,13 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
             <button
               onClick={(e) => { e.stopPropagation(); onTimerToggle(task.id); }}
               className={cn(
-                "flex-shrink-0 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100",
+                "flex-shrink-0 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 timer-button",
                 isRunning
                   ? "text-destructive hover:bg-destructive/10"
                   : "text-primary hover:bg-primary/10"
               )}
+              data-running={isRunning}
+              data-testid={`timer-button-${task.id}`}
             >
               {isRunning ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </button>
@@ -113,21 +122,21 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
         </div>
 
         {task.description && (
-          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 ml-8">
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 ml-8 task-description">
             {task.description}
           </p>
         )}
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 mt-4 text-xs flex-wrap ml-8">
+        <div className="flex items-center gap-3 mt-4 text-xs flex-wrap ml-8 task-metadata">
           <div className="flex items-center gap-1.5">
             <div className={cn("w-1.5 h-1.5 rounded-full", isDone ? "bg-green-500" : priority.dot)} />
-            <span className="text-muted-foreground">{isDone ? 'Done' : priority.label}</span>
+            <span className="text-muted-foreground priority-label">{isDone ? 'Done' : priority.label}</span>
           </div>
 
           {dueDateStr && (
             <div className={cn(
-              "flex items-center gap-1",
+              "flex items-center gap-1 due-date",
               isOverdue ? "text-destructive" : "text-muted-foreground"
             )}>
               <Clock className="w-3 h-3" />
@@ -137,7 +146,7 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
 
           {task.timeTracking && totalSeconds > 0 && (
             <div className={cn(
-              "flex items-center gap-1 ml-auto font-mono",
+              "flex items-center gap-1 ml-auto font-mono time-tracking",
               isRunning ? "text-primary animate-pulse" : "text-muted-foreground"
             )}>
               <Timer className="w-3 h-3" />
@@ -146,14 +155,14 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
           )}
 
           {task.tags && task.tags.length > 0 && (
-            <div className={cn("flex items-center gap-1", totalSeconds === 0 && "ml-auto")}>
+            <div className={cn("flex items-center gap-1 tags-container", totalSeconds === 0 && "ml-auto")}>
               {task.tags.slice(0, 2).map(tag => (
-                <span key={tag} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                <span key={tag} className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[10px] tag">
                   {tag}
                 </span>
               ))}
               {task.tags.length > 2 && (
-                <span className="text-muted-foreground">+{task.tags.length - 2}</span>
+                <span className="text-muted-foreground text-[10px]">+{task.tags.length - 2}</span>
               )}
             </div>
           )}
@@ -161,7 +170,7 @@ export function TaskCard({ task, onUpdate, onDelete, onEdit, onTimerToggle }: Ta
 
         {/* Running timer bar */}
         {isRunning && (
-          <div className="mt-3 h-0.5 bg-secondary rounded-full overflow-hidden">
+          <div className="mt-3 h-0.5 bg-secondary rounded-full overflow-hidden" data-testid="timer-progress">
             <motion.div
               className="h-full bg-primary rounded-full"
               animate={{ width: ['0%', '100%'] }}

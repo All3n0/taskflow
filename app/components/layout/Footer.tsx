@@ -9,9 +9,10 @@ import { useState } from 'react';
 
 interface FooterProps {
   className?: string;
+  onViewChange?: (view: string) => void;
 }
 
-export function Footer({ className }: FooterProps) {
+export function Footer({ className, onViewChange }: FooterProps) {
   const currentYear = new Date().getFullYear();
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -27,23 +28,23 @@ export function Footer({ className }: FooterProps) {
   };
 
   const navLinks = [
-    { label: 'Dashboard', href: '#', view: 'dashboard' },
-    { label: 'Tasks', href: '#', view: 'tasks' },
-    { label: 'Board', href: '#', view: 'board' },
-    { label: 'Calendar', href: '#', view: 'calendar' },
-    { label: 'Notifications', href: '#', view: 'notifications' },
-    { label: 'Settings', href: '#', view: 'settings' },
+    { label: 'Dashboard',     view: 'dashboard' },
+    { label: 'Tasks',         view: 'tasks' },
+    { label: 'Board',         view: 'board' },
+    { label: 'Calendar',      view: 'calendar' },
+    { label: 'Notifications', view: 'notifications' },
+    { label: 'Settings',      view: 'settings' },
   ];
 
   const socialLinks = [
-    { icon: Github, href: 'https://github.com/allankiprop/kazistack', label: 'GitHub' },
-    { icon: Twitter, href: 'https://twitter.com/kazistack', label: 'Twitter' },
-    { icon: Globe, href: 'https://kazistack.vercel.com', label: 'Website' },
+    { icon: Github,  href: 'https://github.com/allankiprop/kazistack', label: 'GitHub' },
+    { icon: Twitter, href: 'https://twitter.com/kazistack',            label: 'Twitter' },
+    { icon: Globe,   href: 'https://kazistack.vercel.com',             label: 'Website' },
   ];
 
   return (
     <>
-      {/* Scroll to top button - appears after scrolling */}
+      {/* Scroll to top button */}
       <AnimatePresence>
         {showScrollTop && (
           <motion.button
@@ -68,11 +69,10 @@ export function Footer({ className }: FooterProps) {
           className
         )}
       >
-        {/* Main footer content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            
-            {/* Brand column - Left */}
+
+            {/* Brand */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <KazistackLogo size={40} showText={false} />
@@ -83,12 +83,11 @@ export function Footer({ className }: FooterProps) {
                   <p className="text-[10px] text-muted-foreground tracking-wider">TASK MANAGEMENT</p>
                 </div>
               </div>
-              
+
               <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
                 Streamline your workflow, boost productivity, and never miss a deadline with Kazistack's intuitive task management system.
               </p>
-              
-              {/* Built by */}
+
               <div className="mt-6 flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Built by</span>
                 <a
@@ -97,7 +96,7 @@ export function Footer({ className }: FooterProps) {
                   rel="noopener noreferrer"
                   className="group flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors"
                 >
-                  <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent group-hover:from-primary/80 group-hover:to-primary">
+                  <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     Allan Kiprop
                   </span>
                   <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -113,12 +112,12 @@ export function Footer({ className }: FooterProps) {
               <ul className="space-y-2.5">
                 {navLinks.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-muted-foreground hover:text-foreground hover:translate-x-1 inline-block transition-all"
+                    <button
+                      onClick={() => onViewChange?.(link.view)}
+                      className="text-sm text-muted-foreground hover:text-foreground hover:translate-x-1 inline-block transition-all text-left"
                     >
                       {link.label}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -147,8 +146,7 @@ export function Footer({ className }: FooterProps) {
                     );
                   })}
                 </div>
-                
-                {/* Version info */}
+
                 <div className="mt-4 pt-4 border-t border-border/50">
                   <div className="flex items-center gap-2 text-xs">
                     <Zap className="w-3 h-3 text-primary" />
@@ -166,17 +164,10 @@ export function Footer({ className }: FooterProps) {
             <p className="text-[10px] text-muted-foreground">
               © {currentYear} Kazistack. All rights reserved.
             </p>
-            
             <div className="flex items-center gap-4">
-              <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-                Privacy
-              </a>
-              <a href="/terms" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-                Terms
-              </a>
-              <a href="/cookies" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-                Cookies
-              </a>
+              <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+              <a href="/terms"   className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+              <a href="/cookies" className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">Cookies</a>
             </div>
           </div>
         </div>

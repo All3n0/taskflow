@@ -82,6 +82,7 @@ export function Header({
           size="icon"
           onClick={onMenuClick}
           className="lg:hidden rounded-full w-10 h-10 hover:bg-secondary"
+          data-testid="menu-button" // Add for tutorial
         >
           <Menu className="w-5 h-5" />
         </Button>
@@ -109,6 +110,7 @@ export function Header({
             size="icon"
             onClick={() => setIsSearchOpen(v => !v)}
             className="sm:hidden rounded-full w-10 h-10 hover:bg-secondary"
+            data-testid="mobile-search-toggle" // Add for tutorial
           >
             {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </Button>
@@ -131,6 +133,7 @@ export function Header({
                     value={searchQuery}
                     onChange={e => onSearchChange(e.target.value)}
                     className="w-full pl-10 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                    data-testid="mobile-search-input" // Add for tutorial
                   />
                   {searchQuery && (
                     <button
@@ -159,6 +162,7 @@ export function Header({
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
               className="w-full pl-10 pr-8 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+              data-testid="search-input" // Add for tutorial targeting
             />
             {searchQuery && (
               <button
@@ -186,6 +190,7 @@ export function Header({
               isSearchOpen ? "hidden sm:inline-flex" : "inline-flex"
             )}
             aria-label="Notifications"
+            data-testid="notification-bell" // Add for tutorial
           >
             <Bell className={cn("w-5 h-5", notifOpen && "text-primary")} />
             {notifCount > 0 && (
@@ -208,6 +213,7 @@ export function Header({
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 top-full mt-2 w-80 bg-background border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
+                data-testid="notification-dropdown" // Add for tutorial
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
@@ -231,6 +237,7 @@ export function Header({
                           key={task.id}
                           className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                           onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
+                          data-testid={`notification-overdue-${task.id}`} // Add for tutorial
                         >
                           <div className="w-7 h-7 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
@@ -259,6 +266,7 @@ export function Header({
                             key={task.id}
                             className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                             onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
+                            data-testid={`notification-duesoon-${task.id}`} // Add for tutorial
                           >
                             <div className="w-7 h-7 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <Clock className="w-3.5 h-3.5 text-yellow-500" />
@@ -284,6 +292,7 @@ export function Header({
                           key={task.id}
                           className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                           onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
+                          data-testid={`notification-urgent-${task.id}`} // Add for tutorial
                         >
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -312,6 +321,7 @@ export function Header({
                   <button
                     onClick={() => { setNotifOpen(false); onViewChange?.('notifications'); }}
                     className="w-full text-xs font-bold text-primary hover:text-primary/80 transition-colors text-center"
+                    data-testid="notification-settings-link" // Add for tutorial
                   >
                     Manage notification settings →
                   </button>
@@ -328,6 +338,7 @@ export function Header({
             "gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20",
             isSearchOpen ? "hidden sm:flex" : "flex"
           )}
+          data-testid="add-task-button" // Add for tutorial targeting
         >
           <Plus className="w-4 h-4" />
           <span className="hidden md:inline">Add Task</span>

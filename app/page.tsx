@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
-import { Footer } from './components/layout/Footer'; // Import Footer
+import { Footer } from './components/layout/Footer';
 import { TaskDialog } from './components/tasks/TaskDialog';
 import { DashboardView } from './components/views/DashboardView';
 import { BoardView } from './components/views/BoardView';
@@ -13,42 +13,81 @@ import { TasksView } from './components/views/TasksView';
 import { CalendarView } from './components/views/CalendarView';
 import { NotificationsView } from './components/views/NotificationsView';
 import { SettingsView } from './components/views/SettingsView';
+import { SplashScreen } from './components/layout/SplashScreen';
 import { useTaskStore } from './components/hooks/useTaskStore';
 import { useTaskReminders } from './components/hooks/useTaskReminders';
 import { useAccentColor } from './components/hooks/useAccentColor';
 import { Task, Status } from './types/task';
 import { cn } from './components/utils';
+import { useTutorial, TUTORIAL_STEPS } from './components/contexts/TutorialContext';
 
 const viewTitles: Record<string, { title: string; subtitle?: string }> = {
   dashboard:     { title: 'Dashboard',     subtitle: 'Your productivity at a glance' },
-  tasks:         { title: 'All Tasks',     subtitle: 'View and manage all your tasks' },
+  tasks:         { title: 'All Tasks',     subtitle: 'View and manage all tasks' },
   board:         { title: 'Project Board', subtitle: 'Kanban-style task management' },
   calendar:      { title: 'Calendar',      subtitle: 'Tasks by due date' },
   notifications: { title: 'Notifications', subtitle: 'Tasks that need your attention' },
   settings:      { title: 'Settings',      subtitle: 'Customize your workspace' },
 };
 
-// Views where search results make sense — search is ACTIVE on all other views
-// but searching only makes sense where tasks are displayed
 const SEARCHABLE_VIEWS = ['tasks', 'dashboard', 'board', 'calendar'];
 
 export default function Home() {
-  const [activeView, setActiveView]         = useState('dashboard');
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [isDialogOpen, setIsDialogOpen]     = useState(false);
-  const [editingTask, setEditingTask]       = useState<Task | null>(null);
-  const [defaultStatus, setDefaultStatus]   = useState<Status>('todo');
+  const [showSplash, setShowSplash] = useState(true);
+  const [activeView, setActiveView] = useState('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [defaultStatus, setDefaultStatus] = useState<Status>('todo');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isViewTransitioning, setIsViewTransitioning] = useState(false);
 
   const { tasks, addTask, updateTask, deleteTask, isLoaded } = useTaskStore();
+  const { setActiveView: setTutorialView, currentStep, showTutorial } = useTutorial();
 
-  // Restores saved accent color + theme on every page load
   useAccentColor();
-
-  // Auto-fires reminders when task due times are reached
   useTaskReminders(tasks);
 
-  // Listen for "mark done" events from OS notification clicks
+  // Check if user has seen splash before
+  useEffect(() => {
+    const hasSeenSplash = sessionStorage.getItem('kazistack-has-seen-splash');
+    if (hasSeenSplash) {
+      setShowSplash(false);
+    } else {
+      sessionStorage.setItem('kazistack-has-seen-splash', 'true');
+    }
+  }, []);
+
+  // Sync view changes with tutorial
+  useEffect(() => {
+    if (showTutorial) {
+      setTutorialView(activeView);
+    }
+  }, [activeView, showTutorial, setTutorialView]);
+
+  // Listen for tutorial view changes with better timing
+  useEffect(() => {
+    if (!showTutorial) return;
+    
+    const step = TUTORIAL_STEPS[currentStep];
+    if (!step?.view) return;
+    
+    const targetView = step.view;
+    
+    if (targetView !== activeView) {
+      setIsViewTransitioning(true);
+      setActiveView(targetView);
+      
+      // Give time for the view to render before allowing highlights
+      const timer = setTimeout(() => {
+        setIsViewTransitioning(false);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, showTutorial, activeView]);
+
+  // Listen for "mark done" events
   useEffect(() => {
     const handler = (e: Event) => {
       const { taskId } = (e as CustomEvent).detail;
@@ -59,7 +98,6 @@ export default function Home() {
     return () => window.removeEventListener('kazistack:complete', handler);
   }, [updateTask]);
 
-  // Clear search when switching views so stale queries don't persist
   useEffect(() => {
     setSearchQuery('');
   }, [activeView]);
@@ -69,7 +107,6 @@ export default function Home() {
     [tasks]
   );
 
-  // Filter tasks by search query — used across all task-displaying views
   const filteredTasks = useMemo(() => {
     if (!searchQuery.trim()) return tasks;
     const q = searchQuery.toLowerCase();
@@ -99,12 +136,12 @@ export default function Home() {
 
   const handleSaveTask = (taskData: Partial<Task>) => {
     addTask({
-      title:        taskData.title || '',
-      description:  taskData.description,
-      status:       taskData.status || defaultStatus,
-      priority:     taskData.priority || 'medium',
-      dueDate:      taskData.dueDate,
-      tags:         taskData.tags || [],
+      title: taskData.title || '',
+      description: taskData.description,
+      status: taskData.status || defaultStatus,
+      priority: taskData.priority || 'medium',
+      dueDate: taskData.dueDate,
+      tags: taskData.tags || [],
       timeTracking: taskData.timeTracking,
     });
   };
@@ -119,14 +156,23 @@ export default function Home() {
     window.location.reload();
   };
 
-  // Called from NotificationsView's settings gear icon
   const handleGoToNotificationSettings = () => {
     setActiveView('settings');
+  };
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
   };
 
   const viewInfo = viewTitles[activeView] || { title: 'kazistack' };
   const isSearchActive = searchQuery.trim().length > 0;
 
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} minimumLoadTime={2000} />;
+  }
+
+  // Then show loading state if needed
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -146,7 +192,6 @@ export default function Home() {
       />
 
       <div className="lg:ml-64 min-h-screen flex flex-col">
-        {/* Header shown on ALL views including settings */}
         <Header
           title={viewInfo.title}
           subtitle={viewInfo.subtitle}
@@ -158,7 +203,6 @@ export default function Home() {
           onViewChange={handleViewChange}
         />
 
-        {/* Global search results overlay — shown when searching on non-task views */}
         {isSearchActive && !SEARCHABLE_VIEWS.includes(activeView) && (
           <div className="px-4 sm:px-6 lg:px-8 pt-2 pb-1">
             <p className="text-xs text-muted-foreground font-medium">
@@ -167,7 +211,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main content area - grows to push footer down */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             {activeView === 'dashboard' && (
@@ -232,8 +275,7 @@ export default function Home() {
           </AnimatePresence>
         </main>
 
-        {/* Footer - now at the bottom of every page */}
-        <Footer />
+        <Footer onViewChange={handleViewChange} />
       </div>
 
       <TaskDialog

@@ -60,7 +60,7 @@ export function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="sidebar flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p
           className="text-[9px] font-black uppercase tracking-widest px-4 mb-2"
           style={{ color: 'var(--sidebar-foreground)', opacity: 0.4 }}
@@ -72,6 +72,7 @@ export function Sidebar({
           return (
             <motion.button
               key={item.id}
+              data-view={item.id} // Add data attribute for tutorial targeting
               onClick={() => handleNavClick(item.id)}
               whileHover={{ x: 3 }}
               whileTap={{ scale: 0.98 }}
@@ -129,6 +130,7 @@ export function Sidebar({
           return (
             <motion.button
               key={item.id}
+              data-view={item.id} // Add data attribute for tutorial targeting
               onClick={() => handleNavClick(item.id)}
               whileHover={{ x: 3 }}
               whileTap={{ scale: 0.98 }}
@@ -184,7 +186,7 @@ export function Sidebar({
     <>
       {/* Desktop */}
       <aside
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-64 border-r z-40"
+        className="sidebar hidden lg:flex flex-col fixed left-0 top-0 h-screen w-64 border-r z-40"
         style={asideStyle}
       >
         {sidebarContent}

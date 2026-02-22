@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+type PermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
+
 interface ExtendedNotificationOptions extends NotificationOptions {
   body?: string;
   tag?: string;
@@ -8,19 +10,23 @@ interface ExtendedNotificationOptions extends NotificationOptions {
 }
 
 export function useNotifications() {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] = useState<PermissionState>('default');
   const [isSupported, setIsSupported] = useState(false);
 
   useEffect(() => {
     const supported = 'Notification' in window;
     setIsSupported(supported);
-    if (supported) setPermission(Notification.permission);
+    if (supported) {
+      setPermission(Notification.permission as PermissionState);
+    } else {
+      setPermission('unsupported');
+    }
   }, []);
 
   const requestPermission = useCallback(async () => {
     if (!isSupported) return false;
     const result = await Notification.requestPermission();
-    setPermission(result);
+    setPermission(result as PermissionState);
     return result === 'granted';
   }, [isSupported]);
 
@@ -33,10 +39,8 @@ export function useNotifications() {
         action: options?.requireInteraction ? {
           label: '✓ Mark done',
           onClick: () => {
-            // The tag contains taskId-type, extract taskId
             const taskId = options?.tag?.split('-')[0];
             if (taskId) {
-              // Dispatch a custom event page.tsx can listen to
               window.dispatchEvent(new CustomEvent('kazistack:complete', {
                 detail: { taskId }
               }));
@@ -52,12 +56,9 @@ export function useNotifications() {
         const n = new Notification(title, {
           body: options?.body,
           tag: options?.tag,
-          // requireInteraction keeps it on screen until dismissed
           requireInteraction: options?.requireInteraction ?? false,
-          // No icon needed — avoids silent failures from missing favicon
         });
 
-        // Clicking the OS notification marks task done
         n.onclick = () => {
           const taskId = options?.tag?.split('-')[0];
           if (taskId) {

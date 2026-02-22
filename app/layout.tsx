@@ -2,6 +2,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from './providers/theme-provider';
+import { TutorialProvider } from './components/contexts/TutorialContext'; // Add this import
+import { TutorialOverlay } from './components/tutorial/TutorialOverlay'; // Add this import
 import './globals.css';
 import { Toaster } from 'sonner';
 
@@ -25,19 +27,22 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          {children}
-          <Toaster 
-            position="top-right" 
-            richColors 
-            closeButton 
-            toastOptions={{
-              style: {
-                background: 'hsl(var(--background))',
-                color: 'hsl(var(--foreground))',
-                border: '1px solid hsl(var(--border))',
-              },
-            }}
-          />
+          <TutorialProvider> {/* Wrap with TutorialProvider */}
+            {children}
+            <TutorialOverlay /> {/* Add the tutorial overlay */}
+            <Toaster 
+              position="top-right" 
+              richColors 
+              closeButton 
+              toastOptions={{
+                style: {
+                  background: 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  border: '1px solid hsl(var(--border))',
+                },
+              }}
+            />
+          </TutorialProvider>
         </ThemeProvider>
       </body>
     </html>
