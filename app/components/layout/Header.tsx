@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Menu, Bell, X, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Menu, Bell, X, Clock, AlertTriangle, CheckCircle2, Flame } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/input';
 import { ThemeToggle } from './ThemeToggle';
@@ -19,6 +19,8 @@ interface HeaderProps {
   onMenuClick?: () => void;
   tasks?: Task[];
   onViewChange?: (view: string) => void;
+  streakCount?: number;
+  streakAlive?: boolean;
 }
 
 export function Header({
@@ -30,6 +32,8 @@ export function Header({
   onMenuClick,
   tasks = [],
   onViewChange,
+  streakCount = 0,
+  streakAlive = false,
 }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -61,7 +65,7 @@ export function Header({
   const dueSoonTasks = tasks.filter(t => {
     if (!t.dueDate || t.status === 'done') return false;
     const diff = new Date(t.dueDate).getTime() - now.getTime();
-    return diff > 0 && diff <= 30 * 60 * 1000; // within 30 min
+    return diff > 0 && diff <= 30 * 60 * 1000;
   });
 
   const urgentTasks = tasks.filter(
@@ -82,17 +86,15 @@ export function Header({
           size="icon"
           onClick={onMenuClick}
           className="lg:hidden rounded-full w-10 h-10 hover:bg-secondary"
-          data-testid="menu-button" // Add for tutorial
+          data-testid="menu-button"
         >
           <Menu className="w-5 h-5" />
         </Button>
         
-        {/* Mobile logo - only visible on mobile */}
         <div className="lg:hidden">
           <KazistackLogo size={28} showText={false} />
         </div>
         
-        {/* Title section */}
         <div className="hidden sm:block">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">{title}</h1>
           {subtitle && (
@@ -104,18 +106,16 @@ export function Header({
       <div className="flex items-center gap-2 md:gap-3">
         {/* Search */}
         <div className="relative flex-1 sm:flex-none">
-          {/* Mobile toggle */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSearchOpen(v => !v)}
             className="sm:hidden rounded-full w-10 h-10 hover:bg-secondary"
-            data-testid="mobile-search-toggle" // Add for tutorial
+            data-testid="mobile-search-toggle"
           >
             {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </Button>
 
-          {/* Mobile expanded search */}
           <AnimatePresence>
             {isSearchOpen && (
               <motion.div
@@ -133,7 +133,7 @@ export function Header({
                     value={searchQuery}
                     onChange={e => onSearchChange(e.target.value)}
                     className="w-full pl-10 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                    data-testid="mobile-search-input" // Add for tutorial
+                    data-testid="mobile-search-input"
                   />
                   {searchQuery && (
                     <button
@@ -153,7 +153,6 @@ export function Header({
             )}
           </AnimatePresence>
 
-          {/* Desktop search — always visible */}
           <div className="hidden sm:block relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -162,7 +161,7 @@ export function Header({
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
               className="w-full pl-10 pr-8 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-              data-testid="search-input" // Add for tutorial targeting
+              data-testid="search-input"
             />
             {searchQuery && (
               <button
@@ -179,6 +178,44 @@ export function Header({
           <ThemeToggle />
         </div>
 
+        {/* ── Streak badge — always visible ── */}
+        {(() => {
+          const n = streakCount;
+          const alive = streakAlive;
+          // Tier colours: 0=grey, 1-2=yellow, 3-6=orange, 7-13=red-orange, 14-29=red, 30+=purple
+          const style =
+            !alive || n === 0 ? 'bg-secondary text-slate-400 border-border' :
+            n < 3             ? 'bg-yellow-400/15 text-yellow-400 border-yellow-400/30' :
+            n < 7             ? 'bg-orange-400/15 text-orange-400 border-orange-400/30' :
+            n < 14            ? 'bg-orange-600/15 text-orange-600 border-orange-600/30' :
+            n < 30            ? 'bg-red-500/15 text-red-500 border-red-500/30' :
+                                'bg-purple-500/15 text-purple-500 border-purple-500/30';
+          const tip =
+            n === 0    ? 'Start your streak — complete a task!' :
+            !alive     ? 'Complete a task to keep your streak!' :
+            n < 3      ? `${n} day streak — keep going!` :
+            n < 7      ? `${n} day streak 🔥` :
+            n < 14     ? `${n} day streak 🔥🔥` :
+            n < 30     ? `${n} day streak 🔥🔥🔥` :
+                         `${n} day streak ⚡ Legendary!`;
+          return (
+            <motion.button
+              onClick={() => onViewChange?.('dashboard')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={tip}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-all',
+                isSearchOpen ? 'hidden sm:flex' : 'flex',
+                style
+              )}
+            >
+              <Flame className="w-3.5 h-3.5" />
+              <span>{n}</span>
+            </motion.button>
+          );
+        })()}
+
         {/* Notification Bell */}
         <div ref={notifRef} className="relative">
           <Button
@@ -190,7 +227,7 @@ export function Header({
               isSearchOpen ? "hidden sm:inline-flex" : "inline-flex"
             )}
             aria-label="Notifications"
-            data-testid="notification-bell" // Add for tutorial
+            data-testid="notification-bell"
           >
             <Bell className={cn("w-5 h-5", notifOpen && "text-primary")} />
             {notifCount > 0 && (
@@ -204,7 +241,6 @@ export function Header({
             )}
           </Button>
 
-          {/* Notification dropdown */}
           <AnimatePresence>
             {notifOpen && (
               <motion.div
@@ -213,9 +249,8 @@ export function Header({
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 top-full mt-2 w-80 bg-background border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
-                data-testid="notification-dropdown" // Add for tutorial
+                data-testid="notification-dropdown"
               >
-                {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                   <h3 className="font-black text-sm">Notifications</h3>
                   {notifCount > 0 && (
@@ -226,7 +261,6 @@ export function Header({
                 </div>
 
                 <div className="max-h-80 overflow-y-auto">
-                  {/* Overdue */}
                   {overdueTasks.length > 0 && (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4 pt-3 pb-1">
@@ -237,23 +271,20 @@ export function Header({
                           key={task.id}
                           className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                           onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
-                          data-testid={`notification-overdue-${task.id}`} // Add for tutorial
+                          data-testid={`notification-overdue-${task.id}`}
                         >
                           <div className="w-7 h-7 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold truncate">{task.title}</p>
-                            <p className="text-xs text-destructive">
-                              Overdue · {task.priority} priority
-                            </p>
+                            <p className="text-xs text-destructive">Overdue · {task.priority} priority</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Due soon */}
                   {dueSoonTasks.length > 0 && (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4 pt-3 pb-1">
@@ -266,7 +297,7 @@ export function Header({
                             key={task.id}
                             className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                             onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
-                            data-testid={`notification-duesoon-${task.id}`} // Add for tutorial
+                            data-testid={`notification-duesoon-${task.id}`}
                           >
                             <div className="w-7 h-7 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <Clock className="w-3.5 h-3.5 text-yellow-500" />
@@ -281,7 +312,6 @@ export function Header({
                     </div>
                   )}
 
-                  {/* High priority */}
                   {urgentTasks.length > 0 && overdueTasks.length === 0 && dueSoonTasks.length === 0 && (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4 pt-3 pb-1">
@@ -292,7 +322,7 @@ export function Header({
                           key={task.id}
                           className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/40 transition-colors cursor-pointer"
                           onClick={() => { setNotifOpen(false); onViewChange?.('tasks'); }}
-                          data-testid={`notification-urgent-${task.id}`} // Add for tutorial
+                          data-testid={`notification-urgent-${task.id}`}
                         >
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -306,7 +336,6 @@ export function Header({
                     </div>
                   )}
 
-                  {/* Empty state */}
                   {overdueTasks.length === 0 && dueSoonTasks.length === 0 && urgentTasks.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                       <CheckCircle2 className="w-8 h-8 mb-2 opacity-40" />
@@ -316,12 +345,11 @@ export function Header({
                   )}
                 </div>
 
-                {/* Footer */}
                 <div className="border-t border-border/50 px-4 py-2.5">
                   <button
                     onClick={() => { setNotifOpen(false); onViewChange?.('notifications'); }}
                     className="w-full text-xs font-bold text-primary hover:text-primary/80 transition-colors text-center"
-                    data-testid="notification-settings-link" // Add for tutorial
+                    data-testid="notification-settings-link"
                   >
                     Manage notification settings →
                   </button>
@@ -338,7 +366,7 @@ export function Header({
             "gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20",
             isSearchOpen ? "hidden sm:flex" : "flex"
           )}
-          data-testid="add-task-button" // Add for tutorial targeting
+          data-testid="add-task-button"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden md:inline">Add Task</span>

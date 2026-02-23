@@ -17,6 +17,7 @@ import { SplashScreen } from './components/layout/SplashScreen';
 import { useTaskStore } from './components/hooks/useTaskStore';
 import { useTaskReminders } from './components/hooks/useTaskReminders';
 import { useAccentColor } from './components/hooks/useAccentColor';
+import { useStreaks } from './components/hooks/UseStreaks';
 import { Task, Status } from './types/task';
 import { cn } from './components/utils';
 import { useTutorial, TUTORIAL_STEPS } from './components/contexts/TutorialContext';
@@ -47,6 +48,7 @@ export default function Home() {
 
   useAccentColor();
   useTaskReminders(tasks);
+  const streak = useStreaks();
 
   // Check if user has seen splash before
   useEffect(() => {
@@ -78,7 +80,6 @@ export default function Home() {
       setIsViewTransitioning(true);
       setActiveView(targetView);
       
-      // Give time for the view to render before allowing highlights
       const timer = setTimeout(() => {
         setIsViewTransitioning(false);
       }, 500);
@@ -92,11 +93,12 @@ export default function Home() {
     const handler = (e: Event) => {
       const { taskId } = (e as CustomEvent).detail;
       updateTask(taskId, { status: 'done' });
+      streak.recordCompletion(new Date().toISOString());
       toast.success('Task marked as done! ✓');
     };
     window.addEventListener('kazistack:complete', handler);
     return () => window.removeEventListener('kazistack:complete', handler);
-  }, [updateTask]);
+  }, [updateTask, streak.recordCompletion]);
 
   useEffect(() => {
     setSearchQuery('');
@@ -167,12 +169,10 @@ export default function Home() {
   const viewInfo = viewTitles[activeView] || { title: 'kazistack' };
   const isSearchActive = searchQuery.trim().length > 0;
 
-  // Show splash screen first
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} minimumLoadTime={2000} />;
   }
 
-  // Then show loading state if needed
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -201,6 +201,8 @@ export default function Home() {
           onMenuClick={() => setIsMobileMenuOpen(true)}
           tasks={tasks}
           onViewChange={handleViewChange}
+          streakCount={streak.currentStreak}
+          streakAlive={streak.streakAlive}
         />
 
         {isSearchActive && !SEARCHABLE_VIEWS.includes(activeView) && (

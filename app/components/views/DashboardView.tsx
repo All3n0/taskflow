@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, isToday, isTomorrow, isThisWeek, isPast } from 'date-fns';
+import { format, isToday, isTomorrow, isThisWeek, isPast, subDays, startOfDay } from 'date-fns';
 import {
   CheckCircle2, Clock, AlertCircle, TrendingUp, ArrowUpRight,
-  Sun, Sunrise, CalendarDays, Inbox, ChevronRight,
+  Sun, Sunrise, CalendarDays, Inbox, ChevronRight, Flame, Trophy, Zap
 } from 'lucide-react';
 import { Task } from '../../types/task';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { TaskDetailPopup } from '../../components/tasks/TaskDetailPopup';
 import { cn } from '../utils';
+import { useStreaks } from '../hooks/UseStreaks';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -37,6 +38,101 @@ const TIME_TABS = [
 ] as const;
 
 type TabId = typeof TIME_TABS[number]['id'];
+
+// Activity Dots Component - Compact version
+function ActivityDots({ completedDates }: { completedDates: string[] }) {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = subDays(startOfDay(new Date()), 6 - i);
+    const key = format(d, 'yyyy-MM-dd');
+    const isToday = i === 6;
+    const done = completedDates.includes(key);
+    const label = format(d, 'EEE');
+    
+    return { key, isToday, done, label };
+  });
+
+  return (
+    <div className="flex items-end gap-1">
+      {days.map((d) => (
+        <div key={d.key} className="flex flex-col items-center gap-0.5">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.02 * days.indexOf(d) }}
+            className={cn(
+              'w-5 h-5 sm:w-6 sm:h-6 rounded-lg transition-all duration-300',
+              d.done
+                ? d.isToday
+                  ? 'bg-gradient-to-br from-orange-400 to-orange-500 shadow-sm shadow-orange-500/30 ring-1 ring-orange-400/20'
+                  : 'bg-gradient-to-br from-orange-400/80 to-orange-500/80'
+                : d.isToday
+                  ? 'bg-secondary/40 border border-dashed border-orange-400/30'
+                  : 'bg-secondary/40'
+            )}
+          >
+            {d.done && (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-0.5 h-0.5 rounded-full bg-white/60" />
+              </div>
+            )}
+          </motion.div>
+          <span className={cn(
+            'text-[6px] font-bold tracking-wide',
+            d.isToday ? 'text-orange-400' : 'text-muted-foreground/60'
+          )}>
+            {d.isToday ? '•' : d.label.slice(0, 1)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Streak Tier Helper
+function getStreakTier(n: number, alive: boolean) {
+  if (!alive || n === 0) return {
+    flameColor: 'text-muted-foreground/40',
+    numColor: 'text-muted-foreground',
+    bgColor: 'bg-muted/20',
+    borderColor: 'border-muted-foreground/10',
+    label: 'Start your streak',
+  };
+  if (n < 3)  return { 
+    flameColor: 'text-yellow-400',  
+    numColor: 'text-yellow-400',  
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/20',
+    label: 'Getting warmed up' 
+  };
+  if (n < 7)  return { 
+    flameColor: 'text-orange-400',  
+    numColor: 'text-orange-400',  
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/20',
+    label: 'On a roll' 
+  };
+  if (n < 14) return { 
+    flameColor: 'text-orange-600',  
+    numColor: 'text-orange-600',  
+    bgColor: 'bg-orange-600/10',
+    borderColor: 'border-orange-600/20',
+    label: 'Week streak' 
+  };
+  if (n < 30) return { 
+    flameColor: 'text-red-500',     
+    numColor: 'text-red-500',     
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/20',
+    label: 'On fire' 
+  };
+  return       { 
+    flameColor: 'text-purple-500',        
+    numColor: 'text-purple-500',  
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/20',
+    label: 'Legendary' 
+  };
+}
 
 function categorizeTasks(tasks: Task[]) {
   const active = tasks.filter(t => t.status !== 'done');
@@ -69,8 +165,19 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('today');
 
+  // Streak hook
+  const streak = useStreaks();
+
   const openDetail = (task: Task) => { setDetailTask(task); setDetailOpen(true); };
   const closeDetail = () => { setDetailOpen(false); setDetailTask(null); };
+
+  // Override onUpdateTask to track completions for streak
+  const handleUpdateTask = (id: string, updates: Partial<Task>) => {
+    if (updates.status === 'done' && !tasks.find(t => t.id === id)?.completedAt) {
+      streak.recordCompletion(updates.completedAt || new Date().toISOString());
+    }
+    onUpdateTask(id, updates);
+  };
 
   // Optional handlers for enhanced popup features
   const handleDuplicate = (task: Task) => {
@@ -98,11 +205,9 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
   const handleCopyLink = (task: Task) => {
     const url = `${window.location.origin}/tasks/${task.id}`;
     navigator.clipboard.writeText(url);
-    // You could show a toast notification here
   };
 
   const handleBookmark = (task: Task) => {
-    // Store bookmarks in localStorage
     const bookmarks = JSON.parse(localStorage.getItem('bookmarkedTasks') || '[]');
     if (!bookmarks.includes(task.id)) {
       bookmarks.push(task.id);
@@ -111,17 +216,14 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
   };
 
   const handleArchive = (task: Task) => {
-    // Archive by moving to backlog
-    onUpdateTask(task.id, { status: 'backlog' });
+    handleUpdateTask(task.id, { status: 'backlog' });
   };
 
   const handleAddReminder = (task: Task) => {
-    // This would typically open a date picker modal
     console.log('Add reminder for task:', task.id);
   };
 
   const handleShare = (task: Task) => {
-    // Try to use the Web Share API if available
     if (navigator.share) {
       navigator.share({
         title: task.title,
@@ -129,13 +231,11 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
         url: `${window.location.origin}/tasks/${task.id}`,
       }).catch(console.error);
     } else {
-      // Fallback to copying link
       handleCopyLink(task);
     }
   };
 
   const handlePrint = (task: Task) => {
-    // Create a printable version of the task
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -183,15 +283,11 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
   };
 
   const handleAssign = (task: Task) => {
-    // This would typically open a user selector modal
     console.log('Assign task:', task.id);
-    // For demo, we'll just log it
   };
 
   const handleMoveToProject = (task: Task) => {
-    // This would typically open a project selector modal
     console.log('Move task to project:', task.id);
-    // For demo, we'll just log it
   };
 
   const completedCount  = tasks.filter(t => t.status === 'done').length;
@@ -220,10 +316,128 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
   }[tab]);
 
   const empty = getEmptyMessage(activeTab);
+  const streakTier = getStreakTier(streak.currentStreak, streak.streakAlive);
 
   return (
     <>
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-4 sm:space-y-6">
+
+        {/* Streak Section - Thinner, Compact Version */}
+        <motion.div
+          variants={item}
+          className={cn(
+            'glass rounded-xl p-3 sm:p-4 relative overflow-hidden',
+            'border transition-all duration-500',
+            streakTier.borderColor
+          )}
+        >
+          <div className="relative flex items-center gap-3 sm:gap-4">
+            {/* Flame Icon */}
+            <div className={cn(
+              'relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0',
+              streakTier.bgColor
+            )}>
+              <Flame className={cn('w-5 h-5 sm:w-6 sm:h-6', streakTier.flameColor)} />
+              {streak.currentStreak > 0 && (
+                <div className={cn(
+                  'absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center',
+                  'text-[8px] font-black text-white',
+                  streak.currentStreak >= 14 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600' 
+                    : streak.currentStreak >= 7
+                      ? 'bg-orange-500'
+                      : 'bg-orange-400'
+                )}>
+                  {streak.currentStreak > 99 ? '99' : streak.currentStreak}
+                </div>
+              )}
+            </div>
+
+            {/* Streak Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className={cn('text-base sm:text-lg font-black', streakTier.numColor)}>
+                  {streak.currentStreak}
+                </span>
+                <span className="text-xs text-muted-foreground/70">
+                  day{streak.currentStreak !== 1 ? 's' : ''}
+                </span>
+                <span className="ml-auto text-[9px] font-medium text-muted-foreground/60">
+                  {streakTier.label}
+                </span>
+              </div>
+              
+              {/* Activity Dots */}
+              <div className="mt-1.5">
+                <ActivityDots completedDates={streak.completedDates} />
+              </div>
+            </div>
+
+            {/* Compact Stats */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="text-right">
+                <div className="flex items-center gap-1">
+                  <Trophy className={cn('w-3 h-3', streak.longestStreak >= 14 ? 'text-yellow-500' : 'text-muted-foreground/40')} />
+                  <span className="text-xs font-black">{streak.longestStreak}</span>
+                </div>
+                <p className="text-[8px] text-muted-foreground/60">BEST</p>
+              </div>
+              <div className="w-px h-6 bg-border/30" />
+              <div className="text-right">
+                <div className="flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-primary/60" />
+                  <span className="text-xs font-black">{streak.totalTasksCompleted}</span>
+                </div>
+                <p className="text-[8px] text-muted-foreground/60">TOTAL</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini Progress Bar */}
+          {streak.currentStreak > 0 && (
+            <div className="mt-2 pt-2 border-t border-border/30">
+              <div className="flex items-center gap-1.5 text-[8px] font-bold text-muted-foreground/60">
+                <span>
+                  {streak.currentStreak < 7 ? '7d' : 
+                   streak.currentStreak < 14 ? '14d' : 
+                   streak.currentStreak < 30 ? '30d' : 'MAX'}
+                </span>
+                <div className="flex-1 h-1 bg-secondary/50 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ 
+                      width: streak.currentStreak < 7 
+                        ? `${(streak.currentStreak / 7) * 100}%` 
+                        : streak.currentStreak < 14 
+                          ? `${((streak.currentStreak - 7) / 7) * 100}%`
+                          : streak.currentStreak < 30 
+                            ? `${((streak.currentStreak - 14) / 16) * 100}%`
+                            : '100%'
+                    }}
+                    transition={{ duration: 0.5 }}
+                    className={cn(
+                      'h-full rounded-full',
+                      streak.currentStreak >= 14 
+                        ? 'bg-gradient-to-r from-orange-400 to-orange-500' 
+                        : streak.currentStreak >= 7 
+                          ? 'bg-gradient-to-r from-orange-400/80 to-orange-500/80'
+                          : 'bg-gradient-to-r from-orange-300 to-orange-400'
+                    )}
+                  />
+                </div>
+                <span>
+                  {streak.currentStreak < 7 
+                    ? `${7 - streak.currentStreak}d` 
+                    : streak.currentStreak < 14 
+                      ? `${14 - streak.currentStreak}d`
+                      : streak.currentStreak < 30
+                        ? `${30 - streak.currentStreak}d`
+                        : '🏆'}
+                </span>
+              </div>
+            </div>
+          )}
+        </motion.div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -338,7 +552,7 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
                       <TaskCard
                         key={task.id}
                         task={task}
-                        onUpdate={onUpdateTask}
+                        onUpdate={handleUpdateTask}
                         onDelete={onDeleteTask}
                         onEdit={openDetail}
                       />
@@ -367,37 +581,36 @@ export function DashboardView({ tasks, onUpdateTask, onDeleteTask, onEditTask, o
       </motion.div>
 
       {/* Enhanced Task Detail Popup with all features */}
-    <TaskDetailPopup
-  task={detailTask}
-  open={detailOpen}
-  onClose={closeDetail}
-  onComplete={(id, done) => {
-    onUpdateTask(id, {
-      status: done ? 'done' : 'todo',
-      completedAt: done ? new Date().toISOString() : undefined,
-    });
-    closeDetail();
-  }}
-  onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
-  onEdit={(task) => { closeDetail(); onEditTask(task); }}
-  onDuplicate={(task) => {
-    const duplicate = {
-      ...task,
-      id: crypto.randomUUID(),
-      title: `${task.title} (Copy)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'todo' as const,
-      completedAt: undefined,
-      timeTracking: task.timeTracking
-        ? { ...task.timeTracking, entries: [], totalTime: 0, isRunning: false, activeEntryId: undefined }
-        : undefined,
-    };
-    // Add it via store directly — need to expose addTask or use updateTask workaround
-    onEditTask(duplicate); // opens it in the dialog so user can save it
-    closeDetail();
-  }}
-/>
+      <TaskDetailPopup
+        task={detailTask}
+        open={detailOpen}
+        onClose={closeDetail}
+        onComplete={(id, done) => {
+          handleUpdateTask(id, {
+            status: done ? 'done' : 'todo',
+            completedAt: done ? new Date().toISOString() : undefined,
+          });
+          closeDetail();
+        }}
+        onDelete={(id) => { onDeleteTask(id); closeDetail(); }}
+        onEdit={(task) => { closeDetail(); onEditTask(task); }}
+        onDuplicate={(task) => {
+          const duplicate = {
+            ...task,
+            id: crypto.randomUUID(),
+            title: `${task.title} (Copy)`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            status: 'todo' as const,
+            completedAt: undefined,
+            timeTracking: task.timeTracking
+              ? { ...task.timeTracking, entries: [], totalTime: 0, isRunning: false, activeEntryId: undefined }
+              : undefined,
+          };
+          onEditTask(duplicate);
+          closeDetail();
+        }}
+      />
     </>
   );
 }
